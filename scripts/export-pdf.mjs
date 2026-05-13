@@ -44,7 +44,7 @@ try {
 
   if (dataPath) {
     if (!existsSync(dataPath)) throw new Error(`Arquivo JSON nao encontrado: ${dataPath}`);
-    const json = readFileSync(dataPath, "utf8");
+    const json = readFileSync(dataPath, "utf8").replace(/^\uFEFF/, "");
     JSON.parse(json);
     await page.evaluate((payload) => {
       localStorage.setItem("planopro_business_plan_v2", payload);
