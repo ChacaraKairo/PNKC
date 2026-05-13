@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Aplicação web gratuita para criar, salvar, exportar e imprimir planos de negócios completos.">
+  <title>PlanoPro | Montador de Plano de Negócios</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Ir para o formulário</a>
+
+  <header class="site-header" id="top">
+    <div class="header-inner">
+      <a class="brand" href="#home" aria-label="PlanoPro - início">
+        <span class="brand-mark" aria-hidden="true">P</span>
+        <span>
+          <strong>PlanoPro</strong>
+          <small>Plano de negócios no navegador</small>
+        </span>
+      </a>
+      <nav class="top-nav" aria-label="Navegação principal">
+        <a href="#home">Início</a>
+        <a href="#workspace">Formulário</a>
+        <a href="#financeiro">Financeiro</a>
+      </nav>
+      <div class="header-actions" aria-label="Ações do plano">
+        <button class="button ghost" type="button" id="saveButton">Salvar</button>
+        <button class="button ghost" type="button" id="exportButton">Exportar</button>
+        <label class="button ghost file-button" for="importFile">Importar</label>
+        <input class="visually-hidden" id="importFile" type="file" accept="application/json">
+        <button class="button primary" type="button" id="printButton">Imprimir/PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="home" aria-labelledby="heroTitle">
+      <div class="hero-media" aria-hidden="true"></div>
+      <div class="hero-content">
+        <p class="eyebrow">Baseado em roteiros do Sebrae e modelos acadêmicos</p>
+        <h1 id="heroTitle">Monte um plano de negócios completo, claro e pronto para apresentar.</h1>
+        <p>Preencha por etapas, salve automaticamente no navegador, anexe imagens, exporte JSON e gere um relatório profissional para impressão ou PDF.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#workspace">Começar agora</a>
+          <button class="button light" type="button" id="continueButton">Continuar rascunho</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-band" aria-label="Resumo do rascunho">
+      <div>
+        <span class="metric-value" id="homeProgress">0%</span>
+        <span class="metric-label">do plano preenchido</span>
+      </div>
+      <div>
+        <span class="metric-value" id="homeSections">0/0</span>
+        <span class="metric-label">etapas iniciadas</span>
+      </div>
+      <div>
+        <span class="metric-value" id="homeSaved">Ainda não salvo</span>
+        <span class="metric-label">última gravação local</span>
+      </div>
+    </section>
+
+    <section class="workspace" id="workspace" aria-label="Formulário do plano de negócios">
+      <aside class="step-panel" aria-label="Etapas do formulário">
+        <div class="progress-card">
+          <div class="progress-copy">
+            <span>Progresso real</span>
+            <strong id="progressText">0%</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
+          <p id="stepSummary">Nenhuma etapa iniciada.</p>
+        </div>
+        <nav class="step-list" id="stepList" aria-label="Lista de etapas"></nav>
+      </aside>
+
+      <div class="form-shell">
+        <div class="form-toolbar" role="region" aria-label="Controle de etapas">
+          <div>
+            <p class="eyebrow">Etapa atual</p>
+            <h2 id="currentStepTitle">Capa</h2>
+          </div>
+          <div class="toolbar-actions">
+            <button class="button ghost" type="button" id="prevButton">Voltar</button>
+            <button class="button primary" type="button" id="nextButton">Próxima etapa</button>
+          </div>
+        </div>
+
+        <div class="notice" id="notice" role="status" aria-live="polite"></div>
+        <form id="planForm" novalidate></form>
+
+        <div class="bottom-actions">
+          <button class="button ghost" type="button" id="bottomPrevButton">Voltar</button>
+          <button class="button primary" type="button" id="bottomNextButton">Próxima etapa</button>
+          <button class="button danger" type="button" id="clearButton">Limpar dados</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="print-report" id="printReport" aria-label="Relatório para impressão"></section>
+
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>
