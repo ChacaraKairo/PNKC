@@ -1,31 +1,37 @@
-# PlanoPro - Montador de Plano de Negócios
+# PlanoPro - Montador de Plano de Negocios
 
-Aplicação web estática para criar, preencher, salvar, exportar e imprimir planos de negócios completos. O projeto foi reorganizado a partir de um protótipo em HTML único e usa referências de roteiros do Sebrae e modelos acadêmicos presentes no repositório.
+Aplicacao web estatica para criar, preencher, salvar, exportar e imprimir planos de negocios completos. O projeto funciona apenas no navegador, sem backend obrigatorio, e foi organizado para publicacao em GitHub Pages, Netlify ou Vercel.
 
 ## Funcionalidades
 
-- Formulário dividido por etapas com navegação lateral.
-- Barra de progresso baseada nos campos, tabelas e imagens preenchidos.
-- Salvamento automático em `localStorage`.
-- Continuação de rascunho ao reabrir o navegador.
-- Upload de logo e imagens de anexos.
-- Exportação e importação em JSON.
-- Relatório profissional para impressão ou salvar em PDF.
-- Cálculos financeiros com tratamento de campos vazios e divisão por zero:
-  - Ponto de equilíbrio.
+- Pagina inicial profissional.
+- Formulario dividido por etapas.
+- Barra de progresso baseada no preenchimento real.
+- Salvamento automatico no navegador com `localStorage`.
+- Continuacao do rascunho ao reabrir o site.
+- Upload de logo e imagens/anexos.
+- Exportacao e importacao em JSON.
+- Relatorio profissional para impressao ou PDF.
+- Calculos financeiros:
+  - Ponto de equilibrio.
   - Lucratividade.
   - Rentabilidade.
   - Prazo de retorno do investimento.
-- Validações amigáveis em campos essenciais.
+- Validacoes amigaveis.
 - Layout responsivo para desktop, tablet e celular.
-- Acessibilidade básica com labels, foco visível, contraste e navegação por teclado.
+- Acessibilidade basica com labels, foco visivel, contraste e navegacao por teclado.
 
 ## Como executar localmente
 
-O site não exige backend nem etapa de build.
+O site nao exige instalacao de dependencias.
 
-1. Abra `index.html` diretamente no navegador.
-2. Opcionalmente, rode um servidor local para testar como site:
+Abra diretamente:
+
+```text
+index.html
+```
+
+Ou rode um servidor estatico:
 
 ```powershell
 python -m http.server 8000
@@ -37,23 +43,33 @@ Depois acesse:
 http://localhost:8000
 ```
 
-## Como usar
+## Como gerar PDF profissional
 
-1. Clique em **Começar agora**.
-2. Preencha as etapas do plano de negócios.
-3. Use **Salvar** para gravar manualmente ou aguarde o salvamento automático.
-4. Use **Exportar** para baixar um backup em JSON.
-5. Use **Importar** para restaurar um JSON salvo.
-6. Use **Imprimir/PDF** para gerar um relatório com logo, data e seções preenchidas.
-7. Use **Limpar dados** apenas quando quiser apagar o rascunho salvo neste navegador.
+O botao **Imprimir/PDF** continua funcionando no navegador. Para gerar um PDF final sem URL local, sem data/horario automaticos do navegador e com numeracao de paginas controlada, use o exportador Puppeteer:
 
-## Estrutura de pastas
+```powershell
+npm install
+npm run export:pdf -- --out dist/plano-pnkc.pdf
+```
+
+Para gerar o PDF a partir de um JSON exportado pelo sistema:
+
+```powershell
+npm run export:pdf -- --data plano-de-negocios.json --out dist/plano-pnkc.pdf
+```
+
+Esse modo usa `printBackground: true`, CSS de impressao em A4 e rodape proprio com numeracao. Ele nao imprime a URL `localhost`.
+
+## Estrutura do projeto
 
 ```text
 .
 ├── index.html
 ├── site-plano-de-negocios.html
 ├── README.md
+├── .editorconfig
+├── .gitattributes
+├── .gitignore
 ├── assets
 │   ├── css
 │   │   └── styles.css
@@ -62,39 +78,53 @@ http://localhost:8000
 │   ├── js
 │   │   └── app.js
 │   └── favicon.svg
-└── PDFs de referência
+└── docs
+    ├── README.md
+    ├── media
+    │   └── imagem-original.jpg
+    └── references
+        └── PDFs de apoio
 ```
 
-`site-plano-de-negocios.html` foi mantido como página de compatibilidade e redireciona para `index.html`.
+## Pastas principais
 
-## Publicar no GitHub Pages
+- `index.html`: entrada principal do site.
+- `site-plano-de-negocios.html`: arquivo legado mantido para compatibilidade, redirecionando para `index.html`.
+- `assets/css`: estilos da aplicacao.
+- `assets/js`: logica de formulario, salvamento, calculos, importacao/exportacao e impressao.
+- `assets/img`: imagens usadas pela interface publicada.
+- `docs/references`: PDFs usados como referencia de conteudo.
+- `docs/media`: arquivos de midia originais ou materiais que nao precisam ser carregados diretamente pelo site.
 
-1. Envie estes arquivos para um repositório GitHub.
+## Como publicar no GitHub Pages
+
+1. Envie o projeto para um repositorio GitHub.
 2. Acesse **Settings > Pages**.
 3. Em **Build and deployment**, escolha **Deploy from a branch**.
-4. Selecione a branch principal e a pasta raiz (`/root`).
-5. Salve e aguarde a URL publicada.
+4. Selecione a branch principal.
+5. Escolha a pasta raiz (`/root`).
+6. Salve e aguarde a URL publicada.
 
-## Publicar na Netlify
+## Como publicar na Netlify
 
-1. Entre em Netlify e escolha **Add new site > Deploy manually**.
-2. Arraste a pasta do projeto para a área de deploy.
-3. Como é um site estático, não informe comando de build.
-4. A pasta de publicação é a raiz do projeto.
+1. Entre na Netlify.
+2. Escolha **Add new site > Deploy manually**.
+3. Arraste a pasta do projeto.
+4. Nao informe comando de build.
+5. Use a raiz do projeto como pasta de publicacao.
 
-## Publicar na Vercel
+## Como publicar na Vercel
 
-1. Importe o repositório na Vercel.
+1. Importe o repositorio na Vercel.
 2. Framework preset: **Other**.
 3. Build command: deixe vazio.
 4. Output directory: deixe vazio ou use `.`.
 5. Publique.
 
-## Próximas melhorias
+## Proximas melhorias
 
-- Exportação em `.docx`.
-- Geração automática de sumário executivo a partir dos campos preenchidos.
-- Máscaras para CNPJ, moeda e telefone.
-- Modo colaborativo com backend opcional.
-- Armazenamento em nuvem por conta de usuário.
-- Gráficos financeiros e projeções por mês.
+- Mascaras para CNPJ, telefone e moeda.
+- Exportacao em `.docx`.
+- Graficos financeiros.
+- Projecoes mensais.
+- Backend opcional para contas de usuario e sincronizacao em nuvem.

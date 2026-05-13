@@ -1,5 +1,23 @@
 const STORAGE_KEY = "planopro_business_plan_v2";
 const LEGACY_KEY = "plano_negocios_form_v1";
+const MAX_LOGO_WIDTH = 900;
+const MAX_ATTACHMENT_WIDTH = 1400;
+const IMAGE_QUALITY = 0.78;
+const KORU_LOGO_SRC = "assets/img/koru-company.jpg";
+const HIDDEN_PRINT_FIELDS = new Set(["reportPrimaryColor", "reportAccentColor"]);
+const MONEY_FIELDS = new Set([
+  "capitalInicial",
+  "faturamentoEsperado",
+  "investimentoTotal",
+  "receitaBruta",
+  "custosFixos",
+  "custosVariaveis",
+  "lucroLiquido",
+  "capitalGiro"
+]);
+const PDF_TITLE = "Plano de Negócios — Koru Company";
+let storageMode = "full";
+let lastQuotaNoticeAt = 0;
 
 const sections = [
   {
@@ -13,7 +31,9 @@ const sections = [
       { name: "autor", label: "Autor/responsável", required: true },
       { name: "cidadeUf", label: "Cidade/UF", placeholder: "Ex.: São Paulo/SP" },
       { name: "ano", label: "Ano", inputType: "number", placeholder: "2026" },
-      { name: "slogan", label: "Slogan ou frase de posicionamento", full: true }
+      { name: "slogan", label: "Slogan ou frase de posicionamento", full: true },
+      { name: "reportPrimaryColor", label: "Cor principal do PDF", inputType: "color", defaultValue: "#12343b" },
+      { name: "reportAccentColor", label: "Cor de destaque do PDF", inputType: "color", defaultValue: "#197278" }
     ]
   },
   {
@@ -173,6 +193,103 @@ const sections = [
   }
 ];
 
+const detailedFieldHelp = {
+  logo: "Use a marca visual da empresa, se ela ja existir. Prefira arquivo quadrado ou horizontal, com boa leitura em fundo claro. A logo aparecera no topo do relatorio impresso.",
+  nomeEmpresa: "Informe o nome principal do negocio ou projeto. Use o nome que voce quer que apareca na capa e nos relatorios. Exemplo: Koru Company, Padaria Vila Nova ou App AgendaPro.",
+  nomeFantasia: "Preencha se o negocio usa um nome comercial diferente da razao social. Se ainda nao houver nome fantasia definido, deixe em branco e volte depois.",
+  autor: "Informe quem esta elaborando ou apresentando o plano. Pode ser o empreendedor, socio responsavel, consultor, grupo academico ou equipe do projeto.",
+  cidadeUf: "Indique a cidade e o estado relacionados ao negocio ou ao local de apresentacao do plano. Exemplo: Curitiba/PR. Se o negocio for digital, use a cidade base da operacao.",
+  ano: "Ano de elaboracao ou atualizacao do plano. Isso ajuda a controlar versoes, principalmente quando o plano for revisado no futuro.",
+  slogan: "Escreva uma frase curta que resuma o posicionamento do negocio. Ela deve comunicar a promessa principal para o cliente. Exemplo: tecnologia simples para pequenos negocios venderem melhor.",
+  reportPrimaryColor: "Escolha a cor principal do PDF. Ela sera usada em titulos, barras e detalhes do relatorio. Para manter identidade KORU, prefira verde escuro, verde azulado ou tons proximos da marca.",
+  reportAccentColor: "Escolha a cor secundaria do PDF. Ela sera usada para destaques, linhas e pequenos detalhes visuais. Use uma cor que combine com a principal e mantenha boa leitura.",
+  resumoNegocio: "Explique em poucos paragrafos o que e o negocio, qual problema ele resolve, para quem ele existe e como pretende gerar receita. O ideal e escrever esta parte por ultimo, depois de preencher mercado, operacao e financeiro.",
+  publicoAlvo: "Descreva o grupo de clientes que o negocio pretende atender. Inclua perfil, localizacao, faixa de renda, comportamento, necessidades, dores e criterios de compra. Evite respostas genericas como todo mundo.",
+  produtosServicos: "Liste o que sera vendido ou entregue. Explique cada produto ou servico em linguagem simples, destacando beneficio, formato de entrega, periodicidade e o que esta incluso.",
+  capitalInicial: "Informe quanto dinheiro sera necessario para iniciar o negocio. Inclua abertura, estrutura, equipamentos, estoque, marketing inicial, tecnologia, taxas e reserva para os primeiros meses.",
+  faturamentoEsperado: "Estime quanto o negocio pretende vender por mes quando estiver operando. Use uma premissa realista, baseada em quantidade de clientes, ticket medio e capacidade de atendimento.",
+  expectativas: "Registre os principais objetivos do empreendedor. Exemplo: validar o mercado, alcancar 50 clientes, abrir uma loja fisica, contratar equipe, expandir para outra cidade ou atingir determinado faturamento.",
+  indicadoresResumo: "Depois de preencher o financeiro, resuma os indicadores mais importantes: ponto de equilibrio, lucratividade, rentabilidade e prazo de retorno. Explique rapidamente se os numeros mostram viabilidade ou exigem ajuste.",
+  razaoSocial: "Nome juridico da empresa registrado ou planejado. Se a empresa ainda nao estiver aberta, escreva a razao social pretendida ou marque que sera definida com contador.",
+  cnpj: "Informe o CNPJ, se ja existir. Se o negocio ainda estiver em planejamento, deixe em branco ou registre que a formalizacao sera feita depois.",
+  cnae: "CNAE e a classificacao da atividade economica. Preencha com o codigo ou descricao principal da atividade. Confirme com contador, pois isso impacta tributacao e permissao de atividades.",
+  porte: "Selecione o porte esperado da empresa. MEI, ME e EPP possuem limites e regras diferentes. Se tiver duvida, escolha a opcao mais proxima e valide com contador.",
+  endereco: "Informe onde o negocio funcionara: endereco fisico, escritorio, home office, loja, ponto comercial, coworking ou operacao online. Se houver varias unidades, descreva cada uma.",
+  setor: "Escolha o setor predominante do negocio. Essa classificacao ajuda a orientar analise de mercado, tributacao, operacao e comparacao com concorrentes.",
+  inicio: "Data prevista para inicio das atividades. Use uma estimativa realista considerando formalizacao, estrutura, compra de equipamentos, equipe e divulgacao.",
+  definicaoNegocio: "Descreva o modelo de negocio: o que sera vendido, como o cliente compra, como a empresa entrega, quais sao as fontes de receita e quais necessidades do mercado serao atendidas.",
+  missao: "Missao e a razao de existir da empresa. Responda: o que fazemos, para quem fazemos e qual valor entregamos. Deve ser clara, objetiva e ligada ao beneficio para o cliente.",
+  visao: "Visao e onde a empresa quer chegar em alguns anos. Descreva uma ambicao concreta, como ser referencia regional, atingir certo numero de clientes ou ampliar linhas de produto.",
+  valores: "Valores sao principios que orientam atitudes e decisoes. Inclua apenas valores que a empresa pretende praticar de verdade, como transparencia, qualidade, agilidade, etica ou inovacao.",
+  equipeAtual: "Descreva quem ja participa do negocio hoje, mesmo que informalmente. Informe funcoes, disponibilidade, responsabilidades e lacunas existentes na equipe.",
+  competenciasCriticas: "Liste conhecimentos ou habilidades que o negocio precisa desenvolver para funcionar bem. Exemplo: vendas, gestao financeira, atendimento, tecnologia, marketing, producao ou logistica.",
+  formaJuridica: "Escolha a forma legal planejada para a empresa. Essa decisao afeta responsabilidade dos socios, impostos, limite de faturamento e obrigacoes legais. Valide com contador antes de abrir.",
+  tributario: "Selecione o regime tributario previsto. Ele define como impostos serao calculados e pagos. Caso ainda nao saiba, marque que sera definido com contador.",
+  objetoSocial: "Descreva as atividades que a empresa podera exercer legalmente. Escreva de forma objetiva, alinhada aos produtos e servicos oferecidos.",
+  licencas: "Informe alvaras, registros, autorizacoes ou licencas necessarias para operar. Exemplo: vigilancia sanitaria, prefeitura, conselho profissional, bombeiros, registro de marca ou licenca ambiental.",
+  riscosLegais: "Liste pontos juridicos ou tributarios que podem gerar problema. Exemplo: uso de dados pessoais, contratos, direitos autorais, normas sanitarias, enquadramento incorreto ou exigencias municipais.",
+  regiao: "Defina onde a empresa atuara: bairro, cidade, estado, Brasil inteiro ou mercado internacional. Para negocios online, explique a abrangencia geografica de venda e atendimento.",
+  nicho: "Nicho e o recorte especifico dentro do mercado. Exemplo: roupas sustentaveis para mulheres de 25 a 40 anos, consultoria financeira para MEIs ou comida saudavel por assinatura.",
+  clientes: "Descreva quem compra, quem usa e quem decide a compra. Inclua necessidades, renda, habitos, frequencia de compra, canais preferidos e fatores que fazem o cliente escolher uma solucao.",
+  persona: "Crie um personagem semificticio que represente o cliente ideal. Inclua nome, idade, rotina, dores, objetivos, objecoes, como pesquisa solucoes e o que valoriza na compra.",
+  problemaMercado: "Explique a dor ou necessidade que justifica o negocio. Mostre por que as opcoes atuais nao resolvem bem e qual oportunidade existe para entregar algo melhor.",
+  tendencias: "Registre mudancas de comportamento, tecnologia, economia, regulacao ou consumo que podem favorecer ou ameacar o negocio nos proximos anos.",
+  propostaValor: "Explique por que o cliente escolheria sua empresa. Relacione problema, solucao, beneficio concreto e diferencial. Uma boa proposta de valor e especifica e facil de entender.",
+  posicionamento: "Defina como a marca quer ser percebida no mercado: economica, premium, rapida, especializada, local, inovadora, artesanal, consultiva ou outra posicao clara.",
+  diferencial: "Liste elementos que tornam o negocio diferente ou melhor que alternativas. Pode ser atendimento, tecnologia, preco, qualidade, prazo, experiencia, especializacao ou relacionamento.",
+  preco: "Explique como os precos serao definidos. Considere custos, margem desejada, valor percebido, concorrencia, descontos, pacotes, mensalidades e condicoes de pagamento.",
+  canaisVenda: "Informe por onde o cliente podera comprar ou contratar. Exemplo: loja fisica, site, WhatsApp, Instagram, marketplace, representantes, parceiros ou vendas consultivas.",
+  promocao: "Descreva como o negocio sera divulgado. Inclua canais, campanhas, conteudos, parcerias, indicacoes, anuncios, eventos e estrategias para gerar conhecimento e demanda.",
+  jornada: "Mapeie o caminho do cliente: como descobre a empresa, como compara opcoes, como compra, como recebe o produto ou servico, como e atendido e como volta a comprar.",
+  localFuncionamento: "Explique onde as atividades acontecem e por que esse local e adequado. Considere acesso de clientes, fornecedores, equipe, custo, infraestrutura e possibilidade de expansao.",
+  estruturaNecessaria: "Liste o que precisa existir para operar: espaco fisico, mobiliario, internet, energia, estoque, maquinas, sistemas, veiculos, atendimento, seguranca e organizacao.",
+  equipamentos: "Relacione equipamentos essenciais e desejaveis. Informe quantidade, finalidade e prioridade. Exemplo: computadores, impressoras, maquinas, ferramentas, moveis ou equipamentos de producao.",
+  softwares: "Liste sistemas e ferramentas digitais necessarios. Exemplo: controle financeiro, CRM, emissor de nota, e-commerce, agenda, design, atendimento, automacao ou planilhas.",
+  equipe5anos: "Descreva como a equipe deve evoluir. Inclua cargos futuros, contratacoes prioritarias, terceirizacoes, liderancas e competencias necessarias para crescer.",
+  capacidade: "Informe quanto a empresa consegue produzir, vender ou atender em determinado periodo. Exemplo: clientes por mes, pedidos por dia, projetos por trimestre ou unidades fabricadas.",
+  processosInternos: "Detalhe as rotinas internas que mantem a empresa funcionando: vendas, atendimento, producao, entrega, financeiro, compras, estoque, qualidade, suporte e pos-venda.",
+  processoOperacional: "Descreva o fluxo principal do trabalho em ordem. Comece na entrada do pedido ou captacao do cliente e termine na entrega, cobranca, suporte e acompanhamento.",
+  investimentoTotal: "Some todos os valores necessarios para iniciar: reformas, equipamentos, estoque inicial, sistemas, taxas, marketing, capital de giro e reserva. Use numeros realistas.",
+  receitaBruta: "Informe o total de vendas previsto por mes antes de descontar custos, despesas e impostos. Calcule multiplicando quantidade esperada pelo preco medio.",
+  custosFixos: "Custos fixos sao gastos que acontecem mesmo vendendo pouco ou nada. Exemplo: aluguel, salarios, internet, contador, sistemas, energia minima e mensalidades.",
+  custosVariaveis: "Custos variaveis aumentam ou diminuem conforme as vendas. Exemplo: materia-prima, comissoes, taxas de cartao, embalagens, frete, impostos sobre venda e insumos.",
+  lucroLiquido: "Informe o resultado esperado depois de descontar custos, despesas e impostos. Se ainda nao souber, estime com cuidado e atualize apos detalhar receitas e gastos.",
+  capitalGiro: "Capital de giro e o dinheiro necessario para manter a operacao entre pagamentos e recebimentos. Inclua estoque, prazo de clientes, despesas mensais e reserva de seguranca.",
+  forcas: "Forcas sao vantagens internas do negocio, ou seja, pontos que dependem da empresa. Exemplo: equipe experiente, tecnologia propria, localizacao, reputacao ou baixo custo.",
+  fraquezas: "Fraquezas sao limitacoes internas que precisam ser melhoradas. Exemplo: pouca experiencia em vendas, capital limitado, dependencia de fornecedor ou falta de processos.",
+  oportunidades: "Oportunidades sao fatores externos favoraveis. Exemplo: crescimento do mercado, novas tecnologias, mudanca de comportamento, incentivos, parcerias ou baixa concorrencia local.",
+  ameacas: "Ameacas sao fatores externos que podem prejudicar o negocio. Exemplo: novos concorrentes, alta de custos, mudanca legal, queda de demanda ou dependencia de plataforma.",
+  fatoresCriticos: "Liste condicoes que precisam dar certo para o negocio ser sustentavel. Exemplo: conquistar clientes recorrentes, controlar custos, manter qualidade, entregar no prazo ou formar equipe.",
+  acoesCurtoPrazo: "Descreva as primeiras acoes praticas para tirar o plano do papel nos proximos 30, 60 ou 90 dias. Inclua prioridade, responsavel e resultado esperado.",
+  anexos: "Adicione imagens que ajudem a comprovar ou explicar o plano: logo, fotos do ponto, prototipos, canvas, organograma, layout, produtos, cardapio, mockups ou pesquisas.",
+  observacoesFinais: "Use este campo para registrar pontos importantes que nao se encaixaram nas etapas anteriores, pendencias, premissas usadas, fontes de informacao ou decisoes futuras."
+};
+
+const detailedTableHelp = {
+  sociosTable: "Use uma linha por socio, fundador ou pessoa-chave. Preencha formacao, experiencia, atribuicoes, participacao e contato para deixar claro quem faz o que no negocio.",
+  concorrentesTable: "Inclua concorrentes diretos e indiretos. Compare pontos fortes, pontos fracos e como sua empresa pretende se diferenciar de forma concreta.",
+  fornecedoresTable: "Liste fornecedores essenciais e parceiros estrategicos. Informe o que fornecem, como contatar e por que sao importantes para a operacao.",
+  investimentosTable: "Detalhe todos os gastos de abertura. Separe itens como equipamentos, reformas, estoque, marketing inicial, sistemas, taxas e reserva.",
+  custosFixosTable: "Registre despesas mensais recorrentes que existem mesmo sem vendas. Esse detalhamento ajuda a validar o campo de custos fixos mensais.",
+  custosVariaveisTable: "Registre gastos ligados diretamente a cada venda ou entrega. Esse detalhamento ajuda a calcular margem de contribuicao e ponto de equilibrio.",
+  receitasTable: "Liste as fontes de receita previstas. Use quantidade, preco medio e receita estimada para justificar a previsao de faturamento mensal.",
+  cronogramaTable: "Transforme o plano em execucao. Cada linha deve ter uma meta ou atividade clara, responsavel, prazo, status e observacoes sobre dependencia ou proximo passo."
+};
+
+function enrichGuidance() {
+  sections.forEach((section) => {
+    (section.fields || []).forEach((field) => {
+      if (detailedFieldHelp[field.name]) field.help = detailedFieldHelp[field.name];
+    });
+
+    (section.tables || []).forEach((table) => {
+      if (detailedTableHelp[table.id]) table.help = detailedTableHelp[table.id];
+    });
+  });
+}
+
+enrichGuidance();
+
 let state = normalizeState(readStoredState());
 let currentStep = 0;
 let dirty = false;
@@ -207,10 +324,61 @@ function readStoredState() {
 function saveState(showMessage = false) {
   collectFields();
   state.updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  dirty = false;
+  const saved = persistState();
+  dirty = !saved;
   updateProgress();
-  if (showMessage) showNotice("Rascunho salvo neste navegador.", "success");
+  if (showMessage && saved) showNotice("Rascunho salvo neste navegador.", "success");
+  return saved;
+}
+
+function persistState() {
+  if (!state.images.logo && state.images.anexos.length === 0) storageMode = "full";
+  const payload = storageMode === "full" ? state : createTextOnlyState();
+
+  try {
+    localStorage.removeItem(LEGACY_KEY);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    return true;
+  } catch (error) {
+    if (!isQuotaExceeded(error)) {
+      notifyStorageFailure("Não foi possível salvar o rascunho neste navegador.");
+      return false;
+    }
+
+    try {
+      storageMode = "text-only";
+      localStorage.removeItem(LEGACY_KEY);
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(createTextOnlyState()));
+      notifyStorageFailure("O navegador atingiu o limite de armazenamento. O texto foi salvo, mas as imagens não cabem no rascunho local. Remova anexos grandes ou exporte o JSON para guardar uma cópia completa.");
+      return true;
+    } catch {
+      notifyStorageFailure("O navegador não conseguiu salvar porque o armazenamento local está cheio. Exporte o JSON e remova imagens grandes para continuar com autosave.");
+      return false;
+    }
+  }
+}
+
+function createTextOnlyState() {
+  return {
+    ...state,
+    images: {
+      logo: null,
+      anexos: []
+    },
+    storageWarning: "Imagens omitidas do autosave local por limite de armazenamento do navegador."
+  };
+}
+
+function isQuotaExceeded(error) {
+  return error?.name === "QuotaExceededError" || error?.code === 22 || error?.code === 1014;
+}
+
+function notifyStorageFailure(message) {
+  const now = Date.now();
+  if (now - lastQuotaNoticeAt < 4000) return;
+  lastQuotaNoticeAt = now;
+  showNotice(message, "error");
 }
 
 function collectFields() {
@@ -330,7 +498,8 @@ function renderField(field) {
   } else if (tag === "select") {
     control = `<select ${common}>${field.options.map((option) => `<option ${getField(field.name) === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
   } else {
-    control = `<input ${common} type="${field.inputType || "text"}" step="${field.step || ""}" value="${escapeHtml(getField(field.name))}" placeholder="${field.placeholder || ""}" ${field.calc ? "data-calc" : ""}>`;
+    const value = getField(field.name) || field.defaultValue || "";
+    control = `<input ${common} type="${field.inputType || "text"}" step="${field.step || ""}" value="${escapeHtml(value)}" placeholder="${field.placeholder || ""}" ${field.calc ? "data-calc" : ""}>`;
   }
 
   return `
@@ -358,6 +527,7 @@ function renderTableBlock(table) {
         <h4>${table.title}</h4>
         <button class="button ghost" type="button" data-add-row="${table.id}">Adicionar linha</button>
       </div>
+      ${table.help ? `<p class="table-help">${table.help}</p>` : ""}
       <div class="table-wrap">
         <table id="${table.id}">
           <thead><tr>${table.columns.map((column) => `<th>${column}</th>`).join("")}<th>Ações</th></tr></thead>
@@ -473,20 +643,35 @@ function bindEvents() {
   form.addEventListener("click", (event) => {
     const add = event.target.closest("[data-add-row]");
     const remove = event.target.closest("[data-remove-row]");
-    if (add) addTableRow(add.dataset.addRow);
-    if (remove) removeTableRow(remove.dataset.removeRow, Number(remove.dataset.row));
+    if (add) {
+      addTableRow(add.dataset.addRow);
+      buttonFeedback(add, "success", "Adicionado");
+    }
+    if (remove) {
+      removeTableRow(remove.dataset.removeRow, Number(remove.dataset.row));
+      buttonFeedback(remove, "success", "Removido");
+    }
   });
 
   document.getElementById("nextButton").addEventListener("click", nextStep);
   document.getElementById("bottomNextButton").addEventListener("click", nextStep);
   document.getElementById("prevButton").addEventListener("click", prevStep);
   document.getElementById("bottomPrevButton").addEventListener("click", prevStep);
-  document.getElementById("saveButton").addEventListener("click", () => saveState(true));
-  document.getElementById("exportButton").addEventListener("click", exportJSON);
+  document.getElementById("saveButton").addEventListener("click", (event) => {
+    if (saveState(true)) {
+      buttonFeedback(event.currentTarget, "success", "Salvo");
+    } else {
+      buttonFeedback(event.currentTarget, "error", "Erro");
+    }
+  });
+  document.getElementById("exportButton").addEventListener("click", (event) => exportJSON(event.currentTarget));
   document.getElementById("importFile").addEventListener("change", importJSON);
-  document.getElementById("printButton").addEventListener("click", printReport);
-  document.getElementById("clearButton").addEventListener("click", clearAll);
-  document.getElementById("continueButton").addEventListener("click", () => document.getElementById("workspace").scrollIntoView({ behavior: "smooth" }));
+  document.getElementById("printButton").addEventListener("click", (event) => printReport(event.currentTarget));
+  document.getElementById("clearButton").addEventListener("click", (event) => clearAll(event.currentTarget));
+  document.getElementById("continueButton").addEventListener("click", (event) => {
+    document.getElementById("workspace").scrollIntoView({ behavior: "smooth" });
+    buttonFeedback(event.currentTarget, "success", "Abrindo");
+  });
   window.addEventListener("beforeprint", buildPrintReport);
 
   window.addEventListener("beforeunload", (event) => {
@@ -509,18 +694,29 @@ function setCurrentStep(index) {
 }
 
 function nextStep() {
+  if (!saveState(true)) {
+    buttonFeedback(document.getElementById("nextButton"), "error", "Erro");
+    buttonFeedback(document.getElementById("bottomNextButton"), "error", "Erro");
+    return;
+  }
+
   const missing = requiredMissingInCurrentStep();
   if (missing.length) {
     showNotice(`Revise os campos obrigatórios desta etapa: ${missing.join(", ")}.`, "error");
+    buttonFeedback(document.getElementById("nextButton"), "error", "Revise");
+    buttonFeedback(document.getElementById("bottomNextButton"), "error", "Revise");
     return;
   }
-  saveState(true);
+  buttonFeedback(document.getElementById("nextButton"), "success", currentStep < sections.length - 1 ? "OK" : "Salvo");
+  buttonFeedback(document.getElementById("bottomNextButton"), "success", currentStep < sections.length - 1 ? "OK" : "Salvo");
   if (currentStep < sections.length - 1) setCurrentStep(currentStep + 1);
   else showNotice("Plano salvo. Você já pode exportar ou imprimir o relatório.", "success");
 }
 
 function prevStep() {
   saveState();
+  buttonFeedback(document.getElementById("prevButton"), "success", "OK");
+  buttonFeedback(document.getElementById("bottomPrevButton"), "success", "OK");
   setCurrentStep(currentStep - 1);
 }
 
@@ -535,6 +731,7 @@ function addTableRow(tableId) {
   state.tables[tableId].push(emptyRow(table));
   renderTableRows(table);
   saveState();
+  showNotice("Linha adicionada com sucesso.", "success");
 }
 
 function removeTableRow(tableId, rowIndex) {
@@ -543,31 +740,64 @@ function removeTableRow(tableId, rowIndex) {
   if (state.tables[tableId].length === 0) state.tables[tableId].push(emptyRow(table));
   renderTableRows(table);
   saveState();
+  showNotice("Linha removida com sucesso.", "success");
 }
 
-function fileToDataURL(file) {
+function compressImageFile(file, maxWidth) {
   return new Promise((resolve, reject) => {
+    if (!file?.type?.startsWith("image/")) {
+      reject(new Error("Arquivo inválido."));
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = reject;
+      image.onload = () => {
+        const scale = Math.min(1, maxWidth / image.width);
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", IMAGE_QUALITY));
+      };
+      image.src = reader.result;
+    };
     reader.readAsDataURL(file);
   });
 }
 
 async function handleLogoUpload(file) {
   if (!file) return;
-  state.images.logo = await fileToDataURL(file);
-  saveState(true);
-  renderImages();
+  try {
+    state.images.logo = await compressImageFile(file, MAX_LOGO_WIDTH);
+    storageMode = "full";
+    saveState(true);
+    renderImages();
+    showNotice("Logo enviada e otimizada com sucesso.", "success");
+  } catch {
+    showNotice("Não foi possível carregar a logo.", "error");
+  }
 }
 
 async function handleAttachments(files, input) {
-  for (const file of Array.from(files || [])) {
-    state.images.anexos.push(await fileToDataURL(file));
+  try {
+    for (const file of Array.from(files || [])) {
+      state.images.anexos.push(await compressImageFile(file, MAX_ATTACHMENT_WIDTH));
+    }
+    storageMode = "full";
+    input.value = "";
+    saveState(true);
+    renderImages();
+    showNotice("Anexo enviado e otimizado com sucesso.", "success");
+  } catch {
+    showNotice("Não foi possível carregar o anexo.", "error");
   }
-  input.value = "";
-  saveState(true);
-  renderImages();
 }
 
 function renderImages() {
@@ -587,8 +817,11 @@ function renderImages() {
   grid.querySelectorAll("[data-remove-image]").forEach((button) => {
     button.addEventListener("click", () => {
       state.images.anexos.splice(Number(button.dataset.removeImage), 1);
+      storageMode = "full";
       saveState();
       renderImages();
+      showNotice("Imagem removida com sucesso.", "success");
+      buttonFeedback(button, "success", "Removido");
     });
   });
 }
@@ -697,17 +930,36 @@ function showNotice(message, type = "success") {
   noticeTimer = setTimeout(() => notice.className = "notice", 4200);
 }
 
-function exportJSON() {
-  saveState();
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  const company = slug(getField("nomeEmpresa") || "plano-de-negocios");
-  link.href = url;
-  link.download = `${company}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  showNotice("Arquivo JSON exportado.", "success");
+function buttonFeedback(button, type, label) {
+  if (!button) return;
+  const originalText = button.dataset.originalText || button.textContent;
+  button.dataset.originalText = originalText;
+  button.classList.remove("feedback-success", "feedback-error");
+  button.classList.add(type === "success" ? "feedback-success" : "feedback-error");
+  button.textContent = label;
+  window.setTimeout(() => {
+    button.classList.remove("feedback-success", "feedback-error");
+    button.textContent = originalText;
+  }, 1800);
+}
+
+function exportJSON(button) {
+  try {
+    saveState();
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const company = slug(getField("nomeEmpresa") || "plano-de-negocios");
+    link.href = url;
+    link.download = `${company}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showNotice("Arquivo JSON exportado com sucesso.", "success");
+    buttonFeedback(button, "success", "Exportado");
+  } catch {
+    showNotice("Não foi possível exportar o JSON.", "error");
+    buttonFeedback(button, "error", "Erro");
+  }
 }
 
 function importJSON(event) {
@@ -718,34 +970,50 @@ function importJSON(event) {
     try {
       state = normalizeState(JSON.parse(reader.result));
       state.updatedAt = new Date().toISOString();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      storageMode = "full";
+      if (!persistState()) throw new Error("Falha ao salvar importação.");
       dirty = false;
       renderForm();
       setCurrentStep(findFirstStartedStep());
       showNotice("Plano importado com sucesso.", "success");
+      buttonFeedback(document.querySelector("label[for='importFile']"), "success", "Importado");
     } catch {
       showNotice("Arquivo JSON inválido.", "error");
+      buttonFeedback(document.querySelector("label[for='importFile']"), "error", "Erro");
     }
   };
   reader.readAsText(file);
   event.target.value = "";
 }
 
-function clearAll() {
+function clearAll(button) {
   const confirmed = window.confirm("Tem certeza que deseja apagar todos os dados salvos neste navegador?");
-  if (!confirmed) return;
+  if (!confirmed) {
+    showNotice("Limpeza cancelada. Seus dados foram mantidos.", "success");
+    buttonFeedback(button, "success", "Mantido");
+    return;
+  }
   localStorage.removeItem(STORAGE_KEY);
+  storageMode = "full";
   state = normalizeState({});
   renderForm();
   setCurrentStep(0);
   updateProgress();
   showNotice("Dados locais apagados.", "success");
+  buttonFeedback(button, "success", "Limpo");
 }
 
-function printReport() {
-  saveState();
-  buildPrintReport();
-  window.print();
+function printReport(button) {
+  try {
+    saveState();
+    buildPrintReport();
+    showNotice("Relatório preparado. A janela de impressão será aberta.", "success");
+    buttonFeedback(button, "success", "Preparado");
+    window.print();
+  } catch {
+    showNotice("Não foi possível preparar o relatório para impressão.", "error");
+    buttonFeedback(button, "error", "Erro");
+  }
 }
 
 function buildPrintReport() {
@@ -753,34 +1021,186 @@ function buildPrintReport() {
   const company = getField("nomeEmpresa") || "Plano de Negócios";
   const location = getField("cidadeUf");
   const year = getField("ano") || new Date().getFullYear();
-  const coverLogo = state.images.logo ? `<img class="print-logo" src="${state.images.logo}" alt="Logo da empresa">` : "";
+  const businessLogo = state.images.logo || KORU_LOGO_SRC;
+  const primaryColor = sanitizeColor(getField("reportPrimaryColor"), "#171512");
+  const accentColor = sanitizeColor(getField("reportAccentColor"), "#b08a4a");
+  const printableSections = sections.filter(sectionHasPrintContent);
 
   report.innerHTML = `
-    <div class="print-cover">
-      ${coverLogo}
-      <h1>${escapeHtml(company)}</h1>
-      <p><strong>Plano de Negócios</strong></p>
-      <p>${escapeHtml(getField("slogan"))}</p>
-      <p>${escapeHtml([location, year].filter(Boolean).join(" - "))}</p>
-      <p>Gerado em ${new Date().toLocaleDateString("pt-BR")}</p>
+    <style>
+      #printReport {
+        --print-primary: ${primaryColor};
+        --print-accent: ${accentColor};
+      }
+    </style>
+    <div class="print-page-brand" aria-hidden="true">
+      <img src="${KORU_LOGO_SRC}" alt="">
     </div>
-    ${sections.map(renderPrintSection).join("")}
+    <div class="print-page-header" aria-hidden="true">
+      <img src="${KORU_LOGO_SRC}" alt="">
+      <span>${PDF_TITLE}</span>
+    </div>
+    <div class="print-page-footer" aria-hidden="true">
+      <span></span>
+      <span>${PDF_TITLE}</span>
+    </div>
+    <div class="print-cover">
+      <div class="print-cover-strip"></div>
+      <div class="print-cover-top">
+        <img class="print-koru-logo" src="${KORU_LOGO_SRC}" alt="KORU Company">
+        <span>KORU COMPANY</span>
+      </div>
+      <img class="print-logo" src="${businessLogo}" alt="Logo da empresa">
+      <p class="print-kicker">Plano de Negócios Estratégico</p>
+      <h1>${escapeHtml(company)}</h1>
+      <p class="print-subtitle">${escapeHtml(getField("slogan") || "Plano de negócios completo, estruturado e pronto para apresentação.")}</p>
+      <dl class="print-meta">
+        <div><dt>Local</dt><dd>${escapeHtml(location || "Nao informado")}</dd></div>
+        <div><dt>Ano</dt><dd>${escapeHtml(year)}</dd></div>
+        <div><dt>Gerado em</dt><dd>${new Date().toLocaleDateString("pt-BR")}</dd></div>
+      </dl>
+    </div>
+    ${renderPrintSummary(printableSections)}
+    ${printableSections.map((section, index) => renderPrintSection(section, index)).join("")}
+    ${renderPrintClosing(company)}
+  `;
+}
+
+function sectionHasPrintContent(section) {
+  const fields = (section.fields || []).filter((field) => !field.type && !HIDDEN_PRINT_FIELDS.has(field.name) && isFilled(state.fields[field.name]));
+  const tables = (section.tables || []).filter((table) => (state.tables[table.id] || []).some((row) => row.some(isFilled)));
+  const hasImages = section.id === "anexos" && state.images.anexos.length;
+  const hasFinanceValues = section.finance && ["receitaBruta", "custosFixos", "custosVariaveis", "lucroLiquido", "investimentoTotal"].some((field) => isFilled(state.fields[field]));
+  return Boolean(fields.length || tables.length || hasImages || hasFinanceValues);
+}
+
+function renderPrintSummary(printableSections) {
+  return `
+    <section class="print-summary">
+      <div class="print-summary-head">
+        <span>Sumário</span>
+        <strong>Koru Company</strong>
+      </div>
+      <h2>Plano de negócios</h2>
+      <ol>
+        ${printableSections.map((section, index) => `<li><span>${String(index + 1).padStart(2, "0")}</span><strong>${section.title}</strong><em></em></li>`).join("")}
+      </ol>
+    </section>
   `;
 }
 
 function renderPrintSection(section, index) {
-  const fields = (section.fields || []).filter((field) => !field.type && isFilled(state.fields[field.name]));
+  const fields = (section.fields || []).filter((field) => shouldPrintField(section, field));
   const tables = (section.tables || []).filter((table) => (state.tables[table.id] || []).some((row) => row.some(isFilled)));
   const hasImages = section.id === "anexos" && state.images.anexos.length;
-  if (!fields.length && !tables.length && !hasImages) return "";
+  const specialContent = renderSpecialPrintContent(section);
+  if (!fields.length && !tables.length && !hasImages && !specialContent) return "";
 
   return `
     <section class="print-section">
-      <h2>${index + 1}. ${section.title}</h2>
+      <div class="print-section-title">
+        <span>${String(index + 1).padStart(2, "0")}</span>
+        <h2>${section.title}</h2>
+      </div>
       ${fields.map((field) => `<p class="print-field"><strong>${field.label}</strong>${formatPrintValue(field, state.fields[field.name])}</p>`).join("")}
+      ${specialContent}
       ${tables.map(renderPrintTable).join("")}
       ${hasImages ? `<div class="print-attachments">${state.images.anexos.map((image, imageIndex) => `<img src="${image}" alt="Anexo ${imageIndex + 1}">`).join("")}</div>` : ""}
     </section>
+  `;
+}
+
+function renderPrintClosing(company) {
+  return `
+    <section class="print-closing">
+      <img src="${KORU_LOGO_SRC}" alt="KORU Company">
+      <p>Obrigado</p>
+      <h2>${escapeHtml(company || "Koru Company")}</h2>
+      <strong>Entender antes de desenvolver.</strong>
+      <div>
+        <span>Plano de Negócios — Koru Company</span>
+        <span>Documento gerado em ${new Date().toLocaleDateString("pt-BR")}</span>
+      </div>
+    </section>
+  `;
+}
+
+function shouldPrintField(section, field) {
+  if (field.type || HIDDEN_PRINT_FIELDS.has(field.name) || !isFilled(state.fields[field.name])) return false;
+  if (section.id === "swot" && ["forcas", "fraquezas", "oportunidades", "ameacas"].includes(field.name)) return false;
+  return true;
+}
+
+function renderSpecialPrintContent(section) {
+  if (section.id === "financeiro") return renderFinancialPrintDashboard();
+  if (section.id === "swot") return renderSwotPrintMatrix();
+  if (section.id === "cronograma") return renderTimelinePrintRoadmap();
+  return "";
+}
+
+function renderFinancialPrintDashboard() {
+  const receita = Number(state.fields.receitaBruta || 0);
+  const fixos = Number(state.fields.custosFixos || 0);
+  const variaveis = Number(state.fields.custosVariaveis || 0);
+  const lucro = Number(state.fields.lucroLiquido || 0);
+  const investimento = Number(state.fields.investimentoTotal || 0);
+  const maxValue = Math.max(receita, fixos, variaveis, lucro, investimento, 1);
+  const values = [
+    ["Receita", receita],
+    ["Custos fixos", fixos],
+    ["Custos variáveis", variaveis],
+    ["Lucro líquido", lucro],
+    ["Investimento", investimento]
+  ];
+
+  return `
+    <div class="print-finance-dashboard">
+      ${values.map(([label, value]) => `
+        <div class="print-finance-bar">
+          <div><strong>${label}</strong><span>${money(value)}</span></div>
+          <i style="width:${Math.max(3, Math.round((value / maxValue) * 100))}%"></i>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderSwotPrintMatrix() {
+  const items = [
+    ["Forças", "forcas"],
+    ["Fraquezas", "fraquezas"],
+    ["Oportunidades", "oportunidades"],
+    ["Ameaças", "ameacas"]
+  ].filter(([, field]) => isFilled(state.fields[field]));
+
+  if (!items.length) return "";
+
+  return `
+    <div class="print-swot-matrix">
+      ${items.map(([label, field]) => `
+        <div>
+          <strong>${label}</strong>
+          <p>${formatPrintValue({ name: field }, state.fields[field])}</p>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderTimelinePrintRoadmap() {
+  const rows = (state.tables.cronogramaTable || []).filter((row) => row.some(isFilled));
+  if (!rows.length) return "";
+
+  return `
+    <div class="print-roadmap">
+      ${rows.map((row) => `
+        <div class="print-roadmap-item">
+          <span>${escapeHtml(formatDate(row[2]) || "Prazo a definir")}</span>
+          <strong>${escapeHtml(row[0] || "Atividade")}</strong>
+          <p>${escapeHtml([row[1], row[3], row[4]].filter(Boolean).join(" • "))}</p>
+        </div>
+      `).join("")}
+    </div>
   `;
 }
 
@@ -791,13 +1211,26 @@ function renderPrintTable(table) {
     <table>
       <caption><strong>${table.title}</strong></caption>
       <thead><tr>${table.columns.map((column) => `<th>${column}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map((row) => `<tr>${table.columns.map((_, index) => `<td>${escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody>
+      <tbody>${rows.map((row) => `<tr>${table.columns.map((_, index) => `<td>${formatPrintTableCell(table, index, row[index])}</td>`).join("")}</tr>`).join("")}</tbody>
     </table>
   `;
 }
 
+function formatPrintTableCell(table, columnIndex, value) {
+  if (!isFilled(value)) return "";
+  if (table.dateColumn === columnIndex) return escapeHtml(formatDate(value));
+  if (table.numericColumn === columnIndex) return money(value);
+  if (/valor|receita|preço|preco/i.test(table.columns[columnIndex])) return money(value);
+  return escapeHtml(value);
+}
+
+function sanitizeColor(value, fallback) {
+  return /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
+}
+
 function formatPrintValue(field, value) {
   if (field.inputType === "date") return escapeHtml(formatDate(value));
+  if (MONEY_FIELDS.has(field.name)) return money(value);
   if (field.inputType === "number") return escapeHtml(String(value).replace(".", ","));
   return escapeHtml(value).replace(/\n/g, "<br>");
 }

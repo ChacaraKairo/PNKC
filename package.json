@@ -1,0 +1,12 @@
+{
+  "name": "pnkc-plano-de-negocios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plano de negocios by KORU Company, PNKC.",
+  "scripts": {
+    "export:pdf": "node scripts/export-pdf.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.31.0"
+  }
+}

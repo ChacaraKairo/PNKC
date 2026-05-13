@@ -1,0 +1,21 @@
+# Sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Dependencias temporarias
+node_modules/
+package-lock.json
+
+# Logs e arquivos temporarios
+*.log
+tmp-*
+*.tmp
+
+# Backups locais
+*.bak
+*.backup
