@@ -60,6 +60,17 @@ Para gerar o PDF a partir de um JSON exportado pelo sistema:
 npm run export:pdf -- --data plano-de-negocios.json --out dist/plano-pnkc.pdf
 ```
 
+Para investigar problemas de dados vazios, CSS ou renderizacao do PDF:
+
+```powershell
+npm run export:pdf -- --data plano-de-negocios.json --out dist/plano-pnkc.pdf --debug
+```
+
+O modo debug abre o site com `?debugPdf=1`, espelha logs do navegador no terminal, imprime estatisticas de `#printReport`, diagnostica estilos computados e salva:
+
+- `dist/debug-print-report.html`
+- `dist/debug-print-report.png`
+
 Esse modo usa `displayHeaderFooter: true`, `footerTemplate`, `printBackground: true` e o HTML final de impressao em A4. Ele nao imprime a URL `localhost`.
 
 O site da empresa no rodape fica centralizado na constante:
@@ -84,6 +95,12 @@ Se o PDF sair vazio, verifique no console se `#printReport[data-ready="true"]` e
 Cada anexo/imagem do plano vira uma pagina propria no PDF, centralizada em orientacao retrato, com proporcao preservada por `object-fit: contain`.
 
 Mais detalhes em [`docs/fluxo-exportacao-pdf.md`](docs/fluxo-exportacao-pdf.md).
+
+## Plano financeiro
+
+A etapa **Plano financeiro** possui cards de indicadores, botao **Recalcular plano financeiro** e tabelas para investimentos iniciais, receitas previstas, custos fixos, custos variaveis, capital de giro e projecao mensal simples.
+
+Os indicadores usam preferencialmente os totais das tabelas preenchidas. Quando uma tabela estiver vazia, o sistema usa os campos principais da etapa. As formulas e limitacoes estao documentadas em [`docs/plano-financeiro.md`](docs/plano-financeiro.md).
 
 ## Estrutura do projeto
 

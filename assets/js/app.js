@@ -5,6 +5,28 @@ const MAX_ATTACHMENT_WIDTH = 1400;
 const IMAGE_QUALITY = 0.78;
 const KORU_LOGO_SRC = "assets/img/koru-company.jpg";
 const COMPANY_SITE_URL = "https://korucompany.com.br";
+const PDF_DEBUG = false;
+const CRITICAL_FIELDS = [
+  "nomeEmpresa",
+  "autor",
+  "resumoNegocio",
+  "publicoAlvo",
+  "propostaValor",
+  "investimentoTotal",
+  "receitaBruta",
+  "custosFixos",
+  "custosVariaveis",
+  "lucroLiquido",
+  "capitalGiro"
+];
+const FINANCIAL_TABLE_IDS = new Set([
+  "investimentosTable",
+  "receitasTable",
+  "custosFixosTable",
+  "custosVariaveisTable",
+  "capitalGiroTable",
+  "projecaoMensalTable"
+]);
 const HIDDEN_PRINT_FIELDS = new Set(["reportPrimaryColor", "reportAccentColor"]);
 const MONEY_FIELDS = new Set([
   "capitalInicial",
@@ -14,7 +36,10 @@ const MONEY_FIELDS = new Set([
   "custosFixos",
   "custosVariaveis",
   "lucroLiquido",
-  "capitalGiro"
+  "capitalGiro",
+  "reservaMinima",
+  "estoqueInicial",
+  "necessidadeCapitalGiro"
 ]);
 const PDF_TITLE = "Plano de Negócios — Koru Company";
 let storageMode = "full";
@@ -150,14 +175,21 @@ const sections = [
       { name: "custosFixos", label: "Custos fixos mensais", inputType: "number", step: "0.01", calc: true },
       { name: "custosVariaveis", label: "Custos variáveis mensais", inputType: "number", step: "0.01", calc: true },
       { name: "lucroLiquido", label: "Lucro líquido mensal", inputType: "number", step: "0.01", calc: true, help: "Receita menos custos, despesas e impostos estimados." },
-      { name: "capitalGiro", label: "Capital de giro necessário", inputType: "number", step: "0.01" }
+      { name: "capitalGiro", label: "Capital de giro necessário", inputType: "number", step: "0.01" },
+      { name: "reservaMinima", label: "Reserva mínima", inputType: "number", step: "0.01" },
+      { name: "prazoRecebimento", label: "Prazo médio de recebimento (dias)", inputType: "number", step: "1" },
+      { name: "prazoPagamento", label: "Prazo médio de pagamento (dias)", inputType: "number", step: "1" },
+      { name: "estoqueInicial", label: "Estoque inicial", inputType: "number", step: "0.01" },
+      { name: "necessidadeCapitalGiro", label: "Necessidade estimada de capital de giro", inputType: "number", step: "0.01" }
     ],
     finance: true,
     tables: [
-      { id: "investimentosTable", title: "Investimentos iniciais", columns: ["Item", "Categoria", "Valor", "Observação"], numericColumn: 2 },
-      { id: "custosFixosTable", title: "Detalhamento de custos fixos", columns: ["Item", "Valor mensal", "Observação"], numericColumn: 1 },
-      { id: "custosVariaveisTable", title: "Detalhamento de custos variáveis", columns: ["Item", "Valor mensal", "Observação"], numericColumn: 1 },
-      { id: "receitasTable", title: "Receitas previstas", columns: ["Produto/serviço", "Quantidade", "Preço médio", "Receita estimada"], numericColumn: 3 }
+      { id: "investimentosTable", title: "Investimentos iniciais", columns: ["Item", "Categoria", "Quantidade", "Valor unitário", "Valor total", "Observação"], numericColumns: [2, 3, 4] },
+      { id: "receitasTable", title: "Receitas previstas", columns: ["Produto/serviço", "Quantidade mensal", "Preço médio", "Receita estimada", "Observação"], numericColumns: [1, 2, 3] },
+      { id: "custosFixosTable", title: "Custos fixos", columns: ["Item", "Valor mensal", "Categoria", "Observação"], numericColumns: [1] },
+      { id: "custosVariaveisTable", title: "Custos variáveis", columns: ["Item", "Valor por venda ou percentual", "Tipo", "Observação"], numericColumns: [1], selectColumn: 2, options: ["Valor fixo", "Percentual"] },
+      { id: "capitalGiroTable", title: "Capital de giro", columns: ["Item", "Valor", "Prazo/critério", "Observação"], numericColumns: [1] },
+      { id: "projecaoMensalTable", title: "Projeção mensal simples", columns: ["Mês", "Receita", "Custos fixos", "Custos variáveis", "Lucro estimado", "Saldo acumulado"], numericColumns: [1, 2, 3, 4, 5], defaultRows: Array.from({ length: 12 }, (_, index) => [`Mês ${index + 1}`, "", "", "", "", ""]) }
     ]
   },
   {
@@ -274,6 +306,8 @@ const detailedTableHelp = {
   custosFixosTable: "Registre despesas mensais recorrentes que existem mesmo sem vendas. Esse detalhamento ajuda a validar o campo de custos fixos mensais.",
   custosVariaveisTable: "Registre gastos ligados diretamente a cada venda ou entrega. Esse detalhamento ajuda a calcular margem de contribuicao e ponto de equilibrio.",
   receitasTable: "Liste as fontes de receita previstas. Use quantidade, preco medio e receita estimada para justificar a previsao de faturamento mensal.",
+  capitalGiroTable: "Detalhe reservas, prazos, estoque inicial e necessidades de caixa para manter a operacao ate as receitas entrarem.",
+  projecaoMensalTable: "Projete 12 meses de receitas, custos, lucro e saldo acumulado para enxergar sazonalidade e necessidade de caixa.",
   cronogramaTable: "Transforme o plano em execucao. Cada linha deve ter uma meta ou atividade clara, responsavel, prazo, status e observacoes sobre dependencia ou proximo passo."
 };
 
@@ -289,6 +323,123 @@ function enrichGuidance() {
   });
 }
 
+function isPdfDebugEnabled() {
+  return PDF_DEBUG || window.PNKC_PDF_DEBUG === true || new URLSearchParams(window.location.search).get("debugPdf") === "1";
+}
+
+function pdfDebugLog(step, payload = {}) {
+  if (!isPdfDebugEnabled()) return;
+  console.groupCollapsed(`[PNKC PDF DEBUG] ${step}`);
+  console.log(payload);
+  console.groupEnd();
+}
+
+function pdfDebugWarn(step, payload = {}) {
+  if (!isPdfDebugEnabled()) return;
+  console.groupCollapsed(`[PNKC PDF DEBUG:WARN] ${step}`);
+  console.warn(payload);
+  console.groupEnd();
+}
+
+function pdfDebugError(step, error, payload = {}) {
+  if (!isPdfDebugEnabled()) return;
+  console.groupCollapsed(`[PNKC PDF DEBUG:ERROR] ${step}`);
+  console.error(error, payload);
+  console.groupEnd();
+}
+
+function financeDebugLog(step, payload = {}) {
+  if (!isPdfDebugEnabled()) return;
+  console.groupCollapsed(`[PNKC FINANCE DEBUG] ${step}`);
+  console.log(payload);
+  console.groupEnd();
+}
+
+function summarizeFields(fields) {
+  return Object.fromEntries(
+    Object.entries(fields || {}).map(([key, value]) => [
+      key,
+      {
+        hasValue: isFilled(value),
+        type: typeof value,
+        length: String(value ?? "").length
+      }
+    ])
+  );
+}
+
+function summarizeState(currentState) {
+  return {
+    hasState: Boolean(currentState),
+    fieldCount: Object.keys(currentState?.fields || {}).length,
+    filledFieldCount: Object.values(currentState?.fields || {}).filter(isFilled).length,
+    tableKeys: Object.keys(currentState?.tables || {}),
+    imageKeys: Object.keys(currentState?.images || {}),
+    attachmentCount: currentState?.images?.anexos?.length || 0
+  };
+}
+
+function summarizeCriticalFields(currentState = state) {
+  return Object.fromEntries(CRITICAL_FIELDS.map((field) => {
+    const value = currentState?.fields?.[field];
+    const numericValue = MONEY_FIELDS.has(field) ? toNumber(value) : null;
+    return [field, {
+      existsInState: Object.prototype.hasOwnProperty.call(currentState?.fields || {}, field),
+      hasValue: isFilled(value),
+      type: typeof value,
+      length: String(value ?? "").length,
+      numericValue
+    }];
+  }));
+}
+
+function summarizeTables(tables = state.tables) {
+  return Object.fromEntries(Object.entries(tables || {}).map(([tableId, rows]) => {
+    const tableConfig = findTableConfig(tableId);
+    const normalizedRows = Array.isArray(rows) ? rows : [];
+    return [tableId, {
+      rowCount: normalizedRows.length,
+      filledRowCount: normalizedRows.filter((row) => Array.isArray(row) && row.some(isFilled)).length,
+      configuredColumns: tableConfig?.columns?.length || 0,
+      firstRowShape: normalizedRows[0]?.map((value) => ({ hasValue: isFilled(value), type: typeof value, length: String(value ?? "").length })) || []
+    }];
+  }));
+}
+
+function getRealReportText(report) {
+  const fixedTexts = [
+    "Plano de Negócios — Koru Company",
+    "Plano de Negocios - Koru Company",
+    "Koru Company — Plano de Negócios",
+    "Koru Company - Plano de Negocios",
+    "Documento gerado pelo PNKC",
+    COMPANY_SITE_URL,
+    "KORU COMPANY",
+    "Koru Company"
+  ];
+  let text = report?.textContent || "";
+  fixedTexts.forEach((fixed) => {
+    text = text.split(fixed).join("");
+  });
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function inspectPrintReport(report) {
+  const realText = getRealReportText(report);
+  return {
+    ready: report?.dataset.ready,
+    pageCount: report?.querySelectorAll(".document-page").length || 0,
+    sectionCount: report?.querySelectorAll(".document-section").length || 0,
+    fieldCount: report?.querySelectorAll(".document-field").length || 0,
+    tableCount: report?.querySelectorAll(".document-table").length || 0,
+    imageCount: report?.querySelectorAll("img").length || 0,
+    textLength: report?.textContent?.trim().length || 0,
+    realTextLength: realText.length,
+    hasOnlyChromeText: realText.length < 50,
+    hasFinancialSection: Boolean(report?.textContent?.includes("Plano financeiro"))
+  };
+}
+
 enrichGuidance();
 
 let state = normalizeState(readStoredState());
@@ -301,7 +452,22 @@ const stepList = document.getElementById("stepList");
 const progressText = document.getElementById("progressText");
 const progressBar = document.getElementById("progressBar");
 
+window.inspectPrintReport = inspectPrintReport;
+window.goToSection = goToSection;
+pdfDebugLog("app:initial-state", {
+  storageKey: STORAGE_KEY,
+  storedSize: localStorage.getItem(STORAGE_KEY)?.length || 0,
+  legacyStoredSize: localStorage.getItem(LEGACY_KEY)?.length || 0,
+  stateSummary: summarizeState(state),
+  criticalFields: summarizeCriticalFields(state),
+  tables: summarizeTables(state.tables)
+});
+
 function normalizeState(raw) {
+  pdfDebugLog("normalizeState", {
+    rawSummary: summarizeState(raw || {}),
+    rawKeys: Object.keys(raw || {})
+  });
   return {
     version: 2,
     updatedAt: raw?.updatedAt || null,
@@ -315,20 +481,32 @@ function normalizeState(raw) {
 }
 
 function readStoredState() {
+  pdfDebugLog("readStoredState:start", {
+    storageKey: STORAGE_KEY,
+    hasCurrent: Boolean(localStorage.getItem(STORAGE_KEY)),
+    currentSize: localStorage.getItem(STORAGE_KEY)?.length || 0,
+    hasLegacy: Boolean(localStorage.getItem(LEGACY_KEY)),
+    legacySize: localStorage.getItem(LEGACY_KEY)?.length || 0
+  });
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(localStorage.getItem(LEGACY_KEY)) || {};
-  } catch {
+    const loaded = JSON.parse(localStorage.getItem(STORAGE_KEY)) || JSON.parse(localStorage.getItem(LEGACY_KEY)) || {};
+    pdfDebugLog("readStoredState:success", { loadedSummary: summarizeState(loaded) });
+    return loaded;
+  } catch (error) {
+    pdfDebugError("readStoredState:error", error);
     return {};
   }
 }
 
 function saveState(showMessage = false) {
+  pdfDebugLog("saveState:start", { showMessage, before: summarizeState(state) });
   collectFields();
   state.updatedAt = new Date().toISOString();
   const saved = persistState();
   dirty = !saved;
   updateProgress();
   if (showMessage && saved) showNotice("Rascunho salvo neste navegador.", "success");
+  pdfDebugLog("saveState:done", { saved, dirty, after: summarizeState(state) });
   return saved;
 }
 
@@ -383,8 +561,24 @@ function notifyStorageFailure(message) {
 }
 
 function collectFields() {
-  form.querySelectorAll("[data-field]").forEach((field) => {
+  const fields = Array.from(form.querySelectorAll("[data-field]"));
+  const beforeFilled = Object.values(state.fields || {}).filter(isFilled).length;
+  fields.forEach((field) => {
     state.fields[field.dataset.field] = field.value;
+  });
+  pdfDebugLog("collectFields", {
+    inputCount: form.querySelectorAll("input").length,
+    textareaCount: form.querySelectorAll("textarea").length,
+    selectCount: form.querySelectorAll("select").length,
+    dataFieldCount: fields.length,
+    collectedFilledCount: fields.filter((field) => isFilled(field.value)).length,
+    beforeFilled,
+    afterFilled: Object.values(state.fields || {}).filter(isFilled).length,
+    requiredFields: sections.flatMap((section) => section.fields || []).filter((field) => field.required).map((field) => ({
+      name: field.name,
+      filled: isFilled(state.fields[field.name])
+    })),
+    criticalFields: summarizeCriticalFields(state)
   });
 }
 
@@ -396,8 +590,18 @@ function isFilled(value) {
   return String(value || "").trim().length > 0;
 }
 
+function toNumber(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const normalized = String(value ?? "")
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+    .replace(",", ".");
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : 0;
+}
+
 function money(value) {
-  const number = Number(value || 0);
+  const number = toNumber(value);
   return number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
@@ -449,7 +653,7 @@ function renderForm() {
 
   sections.forEach((section) => {
     (section.tables || []).forEach((table) => {
-      if (!state.tables[table.id]) state.tables[table.id] = [emptyRow(table)];
+      if (!state.tables[table.id]) state.tables[table.id] = table.defaultRows ? table.defaultRows.map((row) => [...row]) : [emptyRow(table)];
       if (state.tables[table.id].length === 0) state.tables[table.id].push(emptyRow(table));
       renderTableRows(table);
     });
@@ -513,12 +717,20 @@ function renderField(field) {
 
 function renderFinanceCards() {
   return `
+    <div class="finance-intro">
+      <div>
+        <h4>Resumo financeiro</h4>
+        <p>Use os campos e tabelas abaixo para estimar investimento, receitas, custos, capital de giro e viabilidade mensal.</p>
+      </div>
+      <button class="button primary" type="button" id="recalculateFinanceButton">Recalcular plano financeiro</button>
+    </div>
     <div class="finance-results" aria-label="Indicadores financeiros">
       <div class="finance-card"><strong>Ponto de equilíbrio</strong><span id="pontoEquilibrio">R$ 0,00</span><p>Receita mínima para cobrir custos fixos e variáveis, sem lucro nem prejuízo.</p></div>
       <div class="finance-card"><strong>Lucratividade</strong><span id="lucratividade">0,00%</span><p>Percentual da receita que vira lucro líquido no mês.</p></div>
       <div class="finance-card"><strong>Rentabilidade</strong><span id="rentabilidade">0,00%</span><p>Retorno mensal do lucro líquido sobre o investimento inicial.</p></div>
       <div class="finance-card"><strong>Prazo de retorno</strong><span id="retorno">Indefinido</span><p>Tempo estimado para recuperar o investimento inicial.</p></div>
-    </div>`;
+    </div>
+    <p class="finance-warning" id="financeWarning">Preencha receita mensal, custos e investimento inicial para calcular viabilidade.</p>`;
 }
 
 function renderTableBlock(table) {
@@ -565,8 +777,9 @@ function createTableInput(table, rowIndex, columnIndex) {
   input.dataset.table = table.id;
   input.dataset.row = rowIndex;
   input.dataset.column = columnIndex;
+  const numericColumns = new Set([table.numericColumn, ...(table.numericColumns || [])].filter((column) => column !== undefined));
   if (table.dateColumn === columnIndex) input.type = "date";
-  else if (table.numericColumn === columnIndex) {
+  else if (numericColumns.has(columnIndex)) {
     input.type = "number";
     input.step = "0.01";
   } else if (input.tagName === "INPUT") {
@@ -599,9 +812,25 @@ function findTableConfig(tableId) {
 }
 
 function bindEvents() {
+  document.querySelectorAll('a[href="#financeiro"], [data-go-section="financeiro"]').forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      financeDebugLog("finance-link:click", describeFinanceTrigger(event.currentTarget));
+      const success = goToSection("financeiro");
+      if (success) showNotice("Etapa Plano financeiro aberta.", "success");
+    });
+  });
+
   stepList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-step]");
-    if (button) setCurrentStep(Number(button.dataset.step));
+    if (button) {
+      financeDebugLog("step-link:click", {
+        ...describeFinanceTrigger(button),
+        targetSection: sections[Number(button.dataset.step)]?.id,
+        currentStepBefore: currentStep
+      });
+      setCurrentStep(Number(button.dataset.step));
+    }
   });
 
   form.addEventListener("input", (event) => {
@@ -652,6 +881,9 @@ function bindEvents() {
       removeTableRow(remove.dataset.removeRow, Number(remove.dataset.row));
       buttonFeedback(remove, "success", "Removido");
     }
+
+    const recalculate = event.target.closest("#recalculateFinanceButton");
+    if (recalculate) recalculateFinancialPlan(recalculate);
   });
 
   document.getElementById("nextButton").addEventListener("click", nextStep);
@@ -692,6 +924,42 @@ function setCurrentStep(index) {
   document.getElementById("nextButton").textContent = currentStep === sections.length - 1 ? "Concluir" : "Próxima etapa";
   document.getElementById("bottomNextButton").textContent = document.getElementById("nextButton").textContent;
   updateProgress();
+}
+
+function describeFinanceTrigger(element) {
+  return {
+    tagName: element?.tagName,
+    id: element?.id || "",
+    href: element?.getAttribute?.("href") || "",
+    classes: element?.className || "",
+    dataset: { ...(element?.dataset || {}) },
+    disabled: Boolean(element?.disabled)
+  };
+}
+
+function goToSection(sectionId) {
+  const targetIndex = sections.findIndex((section) => section.id === sectionId);
+  financeDebugLog("goToSection:start", {
+    sectionId,
+    targetIndex,
+    currentStepBefore: currentStep,
+    targetElementExists: Boolean(document.getElementById(sectionId))
+  });
+
+  if (targetIndex < 0) {
+    financeDebugLog("goToSection:not-found", { sectionId });
+    return false;
+  }
+
+  setCurrentStep(targetIndex);
+  document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  financeDebugLog("goToSection:success", {
+    sectionId,
+    targetIndex,
+    currentStepAfter: currentStep,
+    financialCardsVisible: Boolean(document.getElementById("pontoEquilibrio"))
+  });
+  return true;
 }
 
 function nextStep() {
@@ -802,6 +1070,16 @@ async function handleAttachments(files, input) {
 }
 
 function renderImages() {
+  pdfDebugLog("renderImages:start", {
+    hasLogo: Boolean(state.images.logo),
+    attachmentCount: state.images.anexos?.length || 0,
+    attachments: (state.images.anexos || []).map((image, index) => ({
+      index,
+      type: typeof image,
+      hasSrc: Boolean(getAttachmentSrc(image)),
+      srcLength: getAttachmentSrc(image).length
+    }))
+  });
   const logoPreview = document.getElementById("logoPreview");
   if (logoPreview) {
     logoPreview.innerHTML = state.images.logo ? `<img src="${state.images.logo}" alt="Logo da empresa">` : "LOGO";
@@ -841,22 +1119,101 @@ function getAttachmentCaption(attachment, index) {
 
 function updateFinancialCards() {
   collectFields();
-  const receita = Number(state.fields.receitaBruta || 0);
-  const lucro = Number(state.fields.lucroLiquido || 0);
-  const investimento = Number(state.fields.investimentoTotal || 0);
-  const fixos = Number(state.fields.custosFixos || 0);
-  const variaveis = Number(state.fields.custosVariaveis || 0);
-  const margemContribuicao = receita - variaveis;
-  const indiceMargem = receita > 0 ? margemContribuicao / receita : 0;
-  const ponto = indiceMargem > 0 ? fixos / indiceMargem : 0;
-  const lucratividade = receita > 0 ? (lucro / receita) * 100 : 0;
-  const rentabilidade = investimento > 0 ? (lucro / investimento) * 100 : 0;
-  const retorno = lucro > 0 ? investimento / lucro : 0;
+  const indicators = calculateFinancialIndicators();
+  state.fields.lucroLiquido = indicators.lucroLiquido ? String(indicators.lucroLiquido.toFixed(2)) : state.fields.lucroLiquido || "";
+  const lucroField = document.querySelector('[data-field="lucroLiquido"]');
+  if (lucroField && document.activeElement !== lucroField) lucroField.value = state.fields.lucroLiquido;
 
-  setText("pontoEquilibrio", indiceMargem > 0 ? money(ponto) : "Indefinido");
-  setText("lucratividade", percent(lucratividade));
-  setText("rentabilidade", percent(rentabilidade));
-  setText("retorno", retorno > 0 && Number.isFinite(retorno) ? `${retorno.toFixed(1).replace(".", ",")} meses` : "Indefinido");
+  setText("pontoEquilibrio", indicators.pontoEquilibrio !== null ? money(indicators.pontoEquilibrio) : "Não calculável");
+  setText("lucratividade", indicators.receitaTotal > 0 ? percent(indicators.margemLucro) : "Não calculável");
+  setText("rentabilidade", indicators.investimentoTotal > 0 ? percent(indicators.rentabilidade) : "Não calculável");
+  setText("retorno", indicators.prazoRetornoMeses !== null ? `${indicators.prazoRetornoMeses.toFixed(1).replace(".", ",")} meses` : "Não calculável");
+  setText("financeWarning", indicators.hasEnoughData ? "Indicadores atualizados com base nos campos e tabelas preenchidos." : "Preencha receita mensal, custos e investimento inicial para calcular viabilidade.");
+  financeDebugLog("updateFinancialCards", indicators);
+}
+
+function recalculateFinancialPlan(button) {
+  try {
+    collectFields();
+    updateFinancialCards();
+    saveState();
+    showNotice("Plano financeiro recalculado com sucesso.", "success");
+    buttonFeedback(button, "success", "Recalculado");
+    financeDebugLog("recalculateFinancialPlan:success", {
+      indicators: calculateFinancialIndicators(),
+      stateSummary: summarizeState(state),
+      tables: summarizeTables(state.tables)
+    });
+  } catch (error) {
+    showNotice("Não foi possível recalcular o plano financeiro.", "error");
+    buttonFeedback(button, "error", "Erro");
+    financeDebugLog("recalculateFinancialPlan:error", { message: error.message });
+    console.error("[PNKC FINANCE DEBUG]", error);
+  }
+}
+
+function calculateFinancialIndicators() {
+  const receitaTabela = sumReceitasTable();
+  const custosFixosTabela = sumTableColumn("custosFixosTable", 1);
+  const custosVariaveisTabela = sumCustosVariaveisTable();
+  const investimentoTabela = sumInvestimentosTable();
+  const capitalGiroTabela = sumTableColumn("capitalGiroTable", 1);
+
+  const receitaTotal = receitaTabela || toNumber(state.fields.receitaBruta) || toNumber(state.fields.faturamentoEsperado);
+  const custosFixosTotal = custosFixosTabela || toNumber(state.fields.custosFixos);
+  const custosVariaveisTotal = custosVariaveisTabela || toNumber(state.fields.custosVariaveis);
+  const investimentoTotal = investimentoTabela || toNumber(state.fields.investimentoTotal) || toNumber(state.fields.capitalInicial);
+  const capitalGiro = capitalGiroTabela || toNumber(state.fields.capitalGiro) || toNumber(state.fields.necessidadeCapitalGiro);
+  const lucroLiquido = receitaTotal - custosFixosTotal - custosVariaveisTotal;
+  const margemLucro = receitaTotal > 0 ? (lucroLiquido / receitaTotal) * 100 : 0;
+  const margemContribuicaoPercentual = receitaTotal > 0 ? (receitaTotal - custosVariaveisTotal) / receitaTotal : 0;
+  const pontoEquilibrio = margemContribuicaoPercentual > 0 ? custosFixosTotal / margemContribuicaoPercentual : null;
+  const rentabilidade = investimentoTotal > 0 ? (lucroLiquido / investimentoTotal) * 100 : 0;
+  const prazoRetornoMeses = lucroLiquido > 0 && investimentoTotal > 0 ? investimentoTotal / lucroLiquido : null;
+
+  return {
+    receitaTotal,
+    custosFixosTotal,
+    custosVariaveisTotal,
+    investimentoTotal,
+    capitalGiro,
+    lucroLiquido,
+    margemLucro,
+    margemContribuicaoPercentual,
+    pontoEquilibrio,
+    rentabilidade,
+    prazoRetornoMeses,
+    hasEnoughData: receitaTotal > 0 && investimentoTotal > 0 && (custosFixosTotal > 0 || custosVariaveisTotal > 0)
+  };
+}
+
+function sumTableColumn(tableId, columnIndex) {
+  return (state.tables[tableId] || []).reduce((total, row) => total + toNumber(row[columnIndex]), 0);
+}
+
+function sumInvestimentosTable() {
+  return (state.tables.investimentosTable || []).reduce((total, row) => {
+    const explicitTotal = toNumber(row[4]);
+    const calculatedTotal = toNumber(row[2]) * toNumber(row[3]);
+    return total + (explicitTotal || calculatedTotal);
+  }, 0);
+}
+
+function sumReceitasTable() {
+  return (state.tables.receitasTable || []).reduce((total, row) => {
+    const explicitTotal = toNumber(row[3]);
+    const calculatedTotal = toNumber(row[1]) * toNumber(row[2]);
+    return total + (explicitTotal || calculatedTotal);
+  }, 0);
+}
+
+function sumCustosVariaveisTable() {
+  const receitaTotal = sumReceitasTable() || toNumber(state.fields.receitaBruta) || toNumber(state.fields.faturamentoEsperado);
+  return (state.tables.custosVariaveisTable || []).reduce((total, row) => {
+    const value = toNumber(row[1]);
+    const type = String(row[2] || "").toLowerCase();
+    return total + (type.includes("percent") ? (receitaTotal * value) / 100 : value);
+  }, 0);
 }
 
 function setText(id, value) {
@@ -978,10 +1335,18 @@ function exportJSON(button) {
 function importJSON(event) {
   const file = event.target.files[0];
   if (!file) return;
+  pdfDebugLog("importJSON:start", { name: file.name, size: file.size, type: file.type });
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      state = normalizeState(JSON.parse(reader.result));
+      const parsed = JSON.parse(String(reader.result).replace(/^\uFEFF/, ""));
+      pdfDebugLog("importJSON:parsed", {
+        keys: Object.keys(parsed || {}),
+        summary: summarizeState(parsed),
+        criticalFields: summarizeCriticalFields(parsed),
+        tables: summarizeTables(parsed.tables || {})
+      });
+      state = normalizeState(parsed);
       state.updatedAt = new Date().toISOString();
       storageMode = "full";
       if (!persistState()) throw new Error("Falha ao salvar importação.");
@@ -990,7 +1355,8 @@ function importJSON(event) {
       setCurrentStep(findFirstStartedStep());
       showNotice("Plano importado com sucesso.", "success");
       buttonFeedback(document.querySelector("label[for='importFile']"), "success", "Importado");
-    } catch {
+    } catch (error) {
+      pdfDebugError("importJSON:error", error);
       showNotice("Arquivo JSON inválido.", "error");
       buttonFeedback(document.querySelector("label[for='importFile']"), "error", "Erro");
     }
@@ -1035,12 +1401,31 @@ async function buildPrintReport(data = state) {
   const report = document.getElementById("printReport");
   if (!report) throw new Error("Elemento #printReport nao encontrado.");
 
+  pdfDebugLog("buildPrintReport:start", {
+    hasReportElement: Boolean(report),
+    dataIsState: data === state,
+    stateSummary: summarizeState(state),
+    inputDataSummary: summarizeState(data),
+    criticalFields: summarizeCriticalFields(data),
+    tables: summarizeTables(data?.tables || {})
+  });
+
   report.dataset.ready = "false";
   document.body.dataset.printReportReady = "false";
-  report.innerHTML = createBusinessPlanDocumentHtml(data);
+  const html = createBusinessPlanDocumentHtml(data);
+  pdfDebugLog("buildPrintReport:html-created", {
+    htmlLength: html.length,
+    containsDocumentPage: html.includes("document-page"),
+    containsDocumentField: html.includes("document-field"),
+    containsDocumentTable: html.includes("document-table"),
+    containsFinancialSection: html.includes("Plano financeiro"),
+    first500Chars: html.slice(0, 500)
+  });
+  report.innerHTML = html;
 
   const pages = report.querySelectorAll(".document-page");
   const hasVisibleContent = report.textContent.trim().length > 0 || report.querySelectorAll("img").length > 0;
+  pdfDebugLog("buildPrintReport:dom-inserted", inspectPrintReport(report));
   if (!pages.length || !hasVisibleContent) {
     report.dataset.ready = "false";
     throw new Error("Relatorio de impressao vazio. Nenhuma pagina document-* foi gerada.");
@@ -1049,22 +1434,45 @@ async function buildPrintReport(data = state) {
   await waitForReportImages(report);
   report.dataset.ready = "true";
   document.body.dataset.printReportReady = "true";
+  pdfDebugLog("buildPrintReport:ready", inspectPrintReport(report));
   return true;
 }
 
 function waitForReportImages(root) {
   const images = Array.from(root.querySelectorAll("img"));
+  pdfDebugLog("waitForReportImages:start", {
+    imageCount: images.length,
+    images: images.map((image, index) => ({
+      index,
+      complete: image.complete,
+      srcLength: image.currentSrc?.length || image.src?.length || 0,
+      alt: image.alt
+    }))
+  });
   return Promise.all(images.map((image) => {
-    if (image.complete) return Promise.resolve();
+    if (image.complete) return Promise.resolve({ status: "complete" });
     return new Promise((resolve) => {
-      image.onload = resolve;
-      image.onerror = resolve;
+      image.onload = () => resolve({ status: "loaded" });
+      image.onerror = () => {
+        pdfDebugWarn("waitForReportImages:error", { srcLength: image.src?.length || 0, alt: image.alt });
+        resolve({ status: "error" });
+      };
     });
-  }));
+  })).then((results) => {
+    pdfDebugLog("waitForReportImages:done", { results });
+    return results;
+  });
 }
 
 function createBusinessPlanDocumentHtml(data = state) {
   const originalState = state;
+  pdfDebugLog("createBusinessPlanDocumentHtml:start", {
+    dataIsState: data === state,
+    originalSummary: summarizeState(originalState),
+    dataSummary: summarizeState(data),
+    criticalFields: summarizeCriticalFields(data),
+    tables: summarizeTables(data?.tables || {})
+  });
   if (data && data !== state) state = normalizeState(data);
 
   try {
@@ -1076,8 +1484,15 @@ function createBusinessPlanDocumentHtml(data = state) {
   const accentColor = sanitizeColor(getField("reportAccentColor"), "#b08a4a");
   const printableSections = sections.filter(sectionHasPrintContent);
   const generatedAt = new Date().toLocaleDateString("pt-BR");
+  pdfDebugLog("createBusinessPlanDocumentHtml:prepared", {
+    company,
+    printableSectionIds: printableSections.map((section) => section.id),
+    financial: calculateFinancialIndicators(),
+    criticalFields: summarizeCriticalFields(state),
+    tables: summarizeTables(state.tables)
+  });
 
-  return `
+  const html = `
     <style>
       #printReport {
         --print-primary: ${primaryColor};
@@ -1105,7 +1520,18 @@ function createBusinessPlanDocumentHtml(data = state) {
     ${renderDocumentImagePages()}
     ${renderDocumentClosing(company, generatedAt)}
   `;
+  pdfDebugLog("createBusinessPlanDocumentHtml:html", {
+    htmlLength: html.length,
+    hasFinancialSection: html.includes("Plano financeiro"),
+    hasFinancialDashboard: html.includes("document-finance-dashboard")
+  });
+  return html;
   } finally {
+    pdfDebugLog("createBusinessPlanDocumentHtml:finally", {
+      restoredState: data !== originalState,
+      currentSummaryBeforeRestore: summarizeState(state),
+      originalSummary: summarizeState(originalState)
+    });
     state = originalState;
   }
 }
@@ -1162,9 +1588,22 @@ function renderDocumentSection(section, index) {
   const fields = (section.fields || []).filter((field) => shouldPrintField(section, field));
   const tables = (section.tables || []).filter((table) => (state.tables[table.id] || []).some((row) => row.some(isFilled)));
   const specialContent = renderSpecialPrintContent(section);
-  if (!fields.length && !tables.length && !specialContent) return "";
+  if (!fields.length && !tables.length && !specialContent) {
+    pdfDebugLog("renderDocumentSection", {
+      sectionId: section.id,
+      title: section.title,
+      configuredFields: section.fields?.length || 0,
+      filledFields: fields.length,
+      configuredTables: section.tables?.length || 0,
+      filledTables: tables.length,
+      htmlLength: 0,
+      skipped: true,
+      isFinancial: section.id === "financeiro"
+    });
+    return "";
+  }
 
-  return renderDocumentPage(`
+  const sectionHtml = renderDocumentPage(`
     <article class="document-section">
       <div class="document-section-title">
         <span>${String(index + 1).padStart(2, "0")}</span>
@@ -1175,9 +1614,31 @@ function renderDocumentSection(section, index) {
       ${tables.map(renderDocumentTable).join("")}
     </article>
   `, { pageClass: "document-content-page" });
+  pdfDebugLog("renderDocumentSection", {
+    sectionId: section.id,
+    title: section.title,
+    configuredFields: section.fields?.length || 0,
+    filledFields: fields.length,
+    configuredTables: section.tables?.length || 0,
+    filledTables: tables.length,
+    htmlLength: sectionHtml.length,
+    skipped: false,
+    isFinancial: section.id === "financeiro"
+  });
+  return sectionHtml;
 }
 
 function renderDocumentImagePages() {
+  pdfDebugLog("renderDocumentImagePages:start", {
+    attachmentCount: state.images.anexos?.length || 0,
+    attachments: (state.images.anexos || []).map((image, index) => ({
+      index,
+      type: typeof image,
+      hasSrc: Boolean(getAttachmentSrc(image)),
+      srcLength: getAttachmentSrc(image).length,
+      caption: getAttachmentCaption(image, index)
+    }))
+  });
   return (state.images.anexos || []).map((image, index) => {
     const src = getAttachmentSrc(image);
     const caption = getAttachmentCaption(image, index);
@@ -1219,30 +1680,47 @@ function renderSpecialPrintContent(section) {
 }
 
 function renderDocumentFinancialDashboard() {
-  const receita = Number(state.fields.receitaBruta || 0);
-  const fixos = Number(state.fields.custosFixos || 0);
-  const variaveis = Number(state.fields.custosVariaveis || 0);
-  const lucro = Number(state.fields.lucroLiquido || 0);
-  const investimento = Number(state.fields.investimentoTotal || 0);
-  const maxValue = Math.max(receita, fixos, variaveis, lucro, investimento, 1);
+  const indicators = calculateFinancialIndicators();
+  const receita = indicators.receitaTotal;
+  const fixos = indicators.custosFixosTotal;
+  const variaveis = indicators.custosVariaveisTotal;
+  const lucro = indicators.lucroLiquido;
+  const investimento = indicators.investimentoTotal;
+  const maxValue = Math.max(receita, fixos, variaveis, Math.abs(lucro), investimento, 1);
   const values = [
     ["Receita", receita],
     ["Custos fixos", fixos],
     ["Custos variáveis", variaveis],
     ["Lucro líquido", lucro],
-    ["Investimento", investimento]
+    ["Investimento", investimento],
+    ["Capital de giro", indicators.capitalGiro]
   ];
 
-  return `
+  const html = `
     <div class="document-finance-dashboard">
       ${values.map(([label, value]) => `
         <div class="document-finance-bar">
           <div><strong>${label}</strong><span>${money(value)}</span></div>
-          <i style="width:${Math.max(3, Math.round((value / maxValue) * 100))}%"></i>
+          <i style="width:${Math.max(3, Math.round((Math.abs(value) / maxValue) * 100))}%"></i>
         </div>
       `).join("")}
+      <div class="document-finance-indicators">
+        <p><strong>Ponto de equilíbrio:</strong> ${indicators.pontoEquilibrio !== null ? money(indicators.pontoEquilibrio) : "Não calculável"}</p>
+        <p><strong>Lucratividade:</strong> ${indicators.receitaTotal > 0 ? percent(indicators.margemLucro) : "Não calculável"}</p>
+        <p><strong>Rentabilidade:</strong> ${indicators.investimentoTotal > 0 ? percent(indicators.rentabilidade) : "Não calculável"}</p>
+        <p><strong>Prazo de retorno:</strong> ${indicators.prazoRetornoMeses !== null ? `${indicators.prazoRetornoMeses.toFixed(1).replace(".", ",")} meses` : "Não calculável"}</p>
+      </div>
+      <p><strong>Interpretação:</strong> o plano financeiro compara receitas, custos e investimento inicial. Quando faltarem dados, os indicadores aparecem como não calculáveis para evitar conclusões falsas.</p>
     </div>
   `;
+  pdfDebugLog("renderFinancialSection", {
+    hasFinancialFields: ["investimentoTotal", "receitaBruta", "custosFixos", "custosVariaveis", "lucroLiquido", "capitalGiro"].some((field) => isFilled(state.fields[field])),
+    hasFinancialTables: Array.from(FINANCIAL_TABLE_IDS).some((tableId) => (state.tables[tableId] || []).some((row) => row.some(isFilled))),
+    financialIndicatorsCalculated: indicators.hasEnoughData,
+    indicators,
+    htmlLength: html.length
+  });
+  return html;
 }
 
 function renderDocumentSwotMatrix() {
@@ -1299,7 +1777,8 @@ function renderDocumentTable(table) {
 function formatDocumentTableCell(table, columnIndex, value) {
   if (!isFilled(value)) return "";
   if (table.dateColumn === columnIndex) return escapeHtml(formatDate(value));
-  if (table.numericColumn === columnIndex) return money(value);
+  const numericColumns = new Set([table.numericColumn, ...(table.numericColumns || [])].filter((column) => column !== undefined));
+  if (numericColumns.has(columnIndex)) return money(value);
   if (/valor|receita|preço|preco/i.test(table.columns[columnIndex])) return money(value);
   return escapeHtml(value);
 }

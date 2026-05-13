@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer";
@@ -49,6 +49,7 @@ for (let index = 0; index < cli.length; index += 1) {
 
 const outPath = resolve(String(args.out || "dist/plano-pnkc.pdf"));
 const dataPath = args.data ? resolve(String(args.data)) : null;
+const debug = Boolean(args.debug);
 const indexPath = resolve("index.html");
 const browserExecutablePath = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -70,16 +71,62 @@ const browser = await puppeteer.launch({
 
 try {
   const page = await browser.newPage();
-  await page.goto(pathToFileURL(indexPath).href, { waitUntil: "networkidle0" });
+  page.on("console", async (msg) => {
+    if (!debug && !msg.text().includes("PNKC")) return;
+    const values = await Promise.all(msg.args().map(async (arg) => {
+      try {
+        return await arg.jsonValue();
+      } catch {
+        return String(arg);
+      }
+    }));
+    console.log(`[BROWSER:${msg.type()}] ${msg.text()}`, values);
+  });
+
+  page.on("pageerror", (error) => {
+    console.error("[BROWSER:pageerror]", error);
+  });
+
+  page.on("requestfailed", (request) => {
+    console.warn("[BROWSER:requestfailed]", request.url(), request.failure()?.errorText);
+  });
+
+  page.on("response", (response) => {
+    if (debug && response.status() >= 400) {
+      console.warn("[BROWSER:bad-response]", response.status(), response.url());
+    }
+  });
+
+  const indexUrl = `${pathToFileURL(indexPath).href}${debug ? "?debugPdf=1" : ""}`;
+  if (debug) console.log("[PNKC PDF DEBUG] opening", indexUrl);
+  await page.goto(indexUrl, { waitUntil: "networkidle0" });
 
   if (dataPath) {
     if (!existsSync(dataPath)) throw new Error(`Arquivo JSON nao encontrado: ${dataPath}`);
     const json = readFileSync(dataPath, "utf8").replace(/^\uFEFF/, "");
-    JSON.parse(json);
+    const parsed = JSON.parse(json);
+    if (debug) {
+      console.log("[PNKC PDF DEBUG] data json", {
+        dataPath,
+        jsonLength: json.length,
+        topLevelKeys: Object.keys(parsed || {}),
+        fieldCount: Object.keys(parsed?.fields || {}).length,
+        tableKeys: Object.keys(parsed?.tables || {}),
+        attachmentCount: parsed?.images?.anexos?.length || 0
+      });
+    }
     await page.evaluate((payload) => {
       localStorage.setItem("planopro_business_plan_v2", payload);
     }, json);
+    if (debug) {
+      const storedSize = await page.evaluate(() => localStorage.getItem("planopro_business_plan_v2")?.length || 0);
+      console.log("[PNKC PDF DEBUG] localStorage after insert", { storedSize });
+    }
     await page.reload({ waitUntil: "networkidle0" });
+    if (debug) {
+      const storedSizeAfterReload = await page.evaluate(() => localStorage.getItem("planopro_business_plan_v2")?.length || 0);
+      console.log("[PNKC PDF DEBUG] localStorage after reload", { storedSizeAfterReload });
+    }
   }
 
   await page.evaluate(async () => {
@@ -98,14 +145,18 @@ try {
 
   const reportStats = await page.evaluate(() => {
     const report = document.querySelector("#printReport");
-    return {
+    return window.inspectPrintReport
+      ? window.inspectPrintReport(report)
+      : {
       pages: document.querySelectorAll("#printReport .document-page").length,
       textLength: report?.textContent?.trim().length || 0,
       imageCount: document.querySelectorAll("#printReport img").length
     };
   });
+  console.log("[PNKC PDF DEBUG] reportStats before PDF", reportStats);
 
-  if (!reportStats.pages || (!reportStats.textLength && !reportStats.imageCount)) {
+  const pageCount = reportStats.pageCount ?? reportStats.pages ?? 0;
+  if (!pageCount || (reportStats.hasOnlyChromeText && !reportStats.imageCount)) {
     throw new Error("Relatorio vazio: #printReport nao contem paginas document-page preenchidas.");
   }
 
@@ -121,6 +172,44 @@ try {
   });
 
   await page.emulateMediaType("print");
+
+  const styleDiagnostics = await page.evaluate(() => {
+    const report = document.querySelector("#printReport");
+    const firstPage = document.querySelector("#printReport .document-page");
+    const firstSection = document.querySelector("#printReport .document-section");
+    const financialSection = Array.from(document.querySelectorAll("#printReport .document-section"))
+      .find((section) => section.textContent.includes("Plano financeiro"));
+
+    return {
+      reportDisplay: report ? getComputedStyle(report).display : null,
+      reportVisibility: report ? getComputedStyle(report).visibility : null,
+      reportHeight: report ? report.getBoundingClientRect().height : null,
+      firstPageDisplay: firstPage ? getComputedStyle(firstPage).display : null,
+      firstPageHeight: firstPage ? firstPage.getBoundingClientRect().height : null,
+      firstSectionDisplay: firstSection ? getComputedStyle(firstSection).display : null,
+      firstSectionHeight: firstSection ? firstSection.getBoundingClientRect().height : null,
+      firstSectionTextLength: firstSection ? firstSection.textContent.trim().length : 0,
+      financialSectionExists: Boolean(financialSection),
+      financialSectionDisplay: financialSection ? getComputedStyle(financialSection).display : null,
+      financialSectionHeight: financialSection ? financialSection.getBoundingClientRect().height : null,
+      financialSectionTextLength: financialSection ? financialSection.textContent.trim().length : 0,
+      financialSectionVisibleInPrint: Boolean(financialSection) && getComputedStyle(financialSection).display !== "none" && getComputedStyle(financialSection).visibility !== "hidden" && financialSection.textContent.trim().length > 0
+    };
+  });
+  console.log("[PNKC PDF DEBUG] styleDiagnostics", styleDiagnostics);
+
+  if (debug) {
+    const debugHtmlPath = resolve(dirname(outPath), "debug-print-report.html");
+    const debugScreenshotPath = resolve(dirname(outPath), "debug-print-report.png");
+    const reportHtml = await page.evaluate(() => {
+      const report = document.querySelector("#printReport");
+      return `<!doctype html><html><head><meta charset="utf-8"><title>PNKC Debug Print Report</title><link rel="stylesheet" href="../assets/css/styles.css"></head><body class="document-preview-active">${report?.outerHTML || ""}</body></html>`;
+    });
+    writeFileSync(debugHtmlPath, reportHtml, "utf8");
+    await page.screenshot({ path: debugScreenshotPath, fullPage: true });
+    console.log("[PNKC PDF DEBUG] debug artifacts", { debugHtmlPath, debugScreenshotPath });
+  }
+
   await page.pdf({
     path: outPath,
     format: "A4",
