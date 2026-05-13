@@ -17,6 +17,21 @@ O PNKC usa uma separacao clara entre a tela de edicao e o documento final.
 - `renderDocumentPage()`: cria paginas A4 com cabecalho, corpo, rodape e marca d'agua.
 - `renderDocumentImagePages()`: cria uma pagina por imagem/anexo.
 
+## Correcao do problema de PDF vazio
+
+O PDF podia sair vazio quando o Puppeteer chamava `page.pdf()` antes de o HTML final estar totalmente montado, ou quando `#printReport` ainda nao tinha paginas do documento.
+
+Agora o fluxo e explicito:
+
+1. `window.buildPrintReport()` limpa e monta `#printReport`.
+2. O relatorio recebe `data-ready="false"` enquanto esta sendo preparado.
+3. O codigo valida se existem paginas `.document-page` e conteudo real.
+4. Todas as imagens dentro de `#printReport` sao aguardadas.
+5. Apenas no fim `#printReport` recebe `data-ready="true"`.
+6. O Puppeteer espera `#printReport[data-ready="true"]` antes de gerar o PDF.
+
+Se `#printReport` nao tiver `.document-page`, o exportador interrompe o processo com erro claro. Isso evita criar um arquivo PDF aparentemente valido, mas sem conteudo.
+
 ## Classes do documento
 
 - `.document-page`
@@ -41,12 +56,14 @@ No Puppeteer, `document.body.classList.add("puppeteer-pdf-mode")` oculta o rodap
 
 Cada imagem ocupa uma pagina propria em `.document-image-page`.
 
-As imagens ficam dentro de `.document-image-frame`, com:
+As imagens ficam dentro de uma `figure.document-image-frame`, com:
 
 - orientacao retrato;
 - centralizacao vertical e horizontal;
 - `object-fit: contain`;
 - quebra antes e depois.
+
+Nao existe grade de anexos no PDF: uma imagem nunca divide pagina com outra imagem.
 
 ## Boas praticas
 

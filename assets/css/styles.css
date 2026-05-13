@@ -981,16 +981,19 @@ td textarea {
 }
 
 .document-preview-active .document-image-frame {
+  margin: 0;
   width: 174mm;
-  height: 226mm;
+  min-height: 220mm;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4mm;
 }
 
 .document-preview-active .document-image-frame img {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  max-height: 210mm;
   object-fit: contain;
 }
 
@@ -1209,6 +1212,20 @@ td textarea {
   display: none !important;
 }
 
+.document-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 4mm;
+}
+
+.document-footer span:nth-child(2) {
+  text-align: center;
+}
+
+.document-footer span:last-child {
+  text-align: right;
+}
+
 @media print {
   @page {
     size: A4 portrait;
@@ -1314,14 +1331,20 @@ td textarea {
   }
 
   .document-footer {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 4mm;
     min-height: 9mm;
     margin-top: auto;
     padding-top: 3mm;
     border-top: 1px solid #dacdaf;
   }
 
+  .document-footer span:nth-child(2) {
+    text-align: center;
+  }
+
   .document-footer span:last-child {
-    margin-left: auto;
     text-align: right;
   }
 
@@ -1513,8 +1536,6 @@ td textarea {
 
   .document-section {
     position: relative;
-    break-inside: avoid;
-    page-break-inside: avoid;
   }
 
   .document-section::before {
@@ -1597,7 +1618,7 @@ td textarea {
     display: table-footer-group;
   }
 
-  .print-report caption {
+  .document-table caption {
     margin-bottom: 2mm;
     color: var(--print-primary, #171512);
     text-align: left;
@@ -1741,18 +1762,20 @@ td textarea {
 
   .document-image-body {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 230mm;
   }
 
   .document-image-frame {
+    margin: 0;
     width: 174mm;
-    height: 226mm;
+    min-height: 220mm;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 4mm;
     border: 1px solid #d8c9ad;
     border-radius: 2mm;
     background: #fffaf1;
@@ -1760,9 +1783,9 @@ td textarea {
   }
 
   .document-image-frame img {
+    width: 100%;
     max-width: 100%;
-    max-height: 100%;
-    width: auto;
+    max-height: 210mm;
     height: auto;
     object-fit: contain;
   }

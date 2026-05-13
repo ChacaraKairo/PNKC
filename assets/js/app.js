@@ -673,7 +673,7 @@ function bindEvents() {
     document.getElementById("workspace").scrollIntoView({ behavior: "smooth" });
     buttonFeedback(event.currentTarget, "success", "Abrindo");
   });
-  window.addEventListener("beforeprint", buildPrintReport);
+  window.addEventListener("beforeprint", () => buildPrintReport());
 
   window.addEventListener("beforeunload", (event) => {
     if (!dirty) return;
@@ -811,7 +811,7 @@ function renderImages() {
   if (!grid) return;
   grid.innerHTML = (state.images.anexos || []).map((image, index) => `
     <article class="attachment-card">
-      <div class="attachment-thumb"><img src="${image}" alt="Anexo ${index + 1}"></div>
+      <div class="attachment-thumb"><img src="${getAttachmentSrc(image)}" alt="${escapeHtml(getAttachmentCaption(image, index))}"></div>
       <div class="row-actions"><button class="button danger" type="button" data-remove-image="${index}">Remover</button></div>
     </article>
   `).join("");
@@ -825,6 +825,18 @@ function renderImages() {
       buttonFeedback(button, "success", "Removido");
     });
   });
+}
+
+function getAttachmentSrc(attachment) {
+  if (typeof attachment === "string") return attachment;
+  return attachment?.src || attachment?.dataUrl || attachment?.url || "";
+}
+
+function getAttachmentCaption(attachment, index) {
+  if (attachment && typeof attachment === "object") {
+    return attachment.caption || attachment.name || attachment.description || `Anexo ${index + 1}`;
+  }
+  return `Anexo ${index + 1}`;
 }
 
 function updateFinancialCards() {
@@ -1004,10 +1016,10 @@ function clearAll(button) {
   buttonFeedback(button, "success", "Limpo");
 }
 
-function printReport(button) {
+async function printReport(button) {
   try {
     saveState();
-    buildPrintReport();
+    await buildPrintReport();
     document.body.classList.add("document-preview-active");
     document.getElementById("printReport").scrollIntoView({ behavior: "smooth", block: "start" });
     showNotice("Versão HTML de impressão preparada. A janela de impressão será aberta.", "success");
@@ -1019,12 +1031,43 @@ function printReport(button) {
   }
 }
 
-function buildPrintReport() {
+async function buildPrintReport(data = state) {
   const report = document.getElementById("printReport");
-  report.innerHTML = createBusinessPlanDocumentHtml();
+  if (!report) throw new Error("Elemento #printReport nao encontrado.");
+
+  report.dataset.ready = "false";
+  document.body.dataset.printReportReady = "false";
+  report.innerHTML = createBusinessPlanDocumentHtml(data);
+
+  const pages = report.querySelectorAll(".document-page");
+  const hasVisibleContent = report.textContent.trim().length > 0 || report.querySelectorAll("img").length > 0;
+  if (!pages.length || !hasVisibleContent) {
+    report.dataset.ready = "false";
+    throw new Error("Relatorio de impressao vazio. Nenhuma pagina document-* foi gerada.");
+  }
+
+  await waitForReportImages(report);
+  report.dataset.ready = "true";
+  document.body.dataset.printReportReady = "true";
+  return true;
 }
 
-function createBusinessPlanDocumentHtml() {
+function waitForReportImages(root) {
+  const images = Array.from(root.querySelectorAll("img"));
+  return Promise.all(images.map((image) => {
+    if (image.complete) return Promise.resolve();
+    return new Promise((resolve) => {
+      image.onload = resolve;
+      image.onerror = resolve;
+    });
+  }));
+}
+
+function createBusinessPlanDocumentHtml(data = state) {
+  const originalState = state;
+  if (data && data !== state) state = normalizeState(data);
+
+  try {
   const company = getField("nomeEmpresa") || "Plano de Negócios";
   const location = getField("cidadeUf");
   const year = getField("ano") || new Date().getFullYear();
@@ -1062,6 +1105,9 @@ function createBusinessPlanDocumentHtml() {
     ${renderDocumentImagePages()}
     ${renderDocumentClosing(company, generatedAt)}
   `;
+  } finally {
+    state = originalState;
+  }
 }
 
 function renderDocumentPage(content, options = {}) {
@@ -1083,7 +1129,7 @@ function renderDocumentPage(content, options = {}) {
       </main>
       ${options.hideChrome ? "" : `
         <footer class="document-footer">
-          <span>Koru Company — Plano de Negócios</span>
+          <span>Koru Company &mdash; Plano de Neg&oacute;cios</span>
           <span>Documento gerado pelo PNKC</span>
           <span>${COMPANY_SITE_URL}</span>
         </footer>
@@ -1132,12 +1178,18 @@ function renderDocumentSection(section, index) {
 }
 
 function renderDocumentImagePages() {
-  return (state.images.anexos || []).map((image, index) => renderDocumentPage(`
-    <div class="document-image-frame">
-      <img src="${image}" alt="Anexo ${index + 1}">
-    </div>
-    <p class="document-image-caption">Anexo ${index + 1}</p>
-  `, { pageClass: "document-image-page", bodyClass: "document-image-body" })).join("");
+  return (state.images.anexos || []).map((image, index) => {
+    const src = getAttachmentSrc(image);
+    const caption = getAttachmentCaption(image, index);
+    if (!src) return "";
+
+    return renderDocumentPage(`
+    <figure class="document-image-frame">
+      <img src="${src}" alt="${escapeHtml(caption)}">
+      <figcaption class="document-image-caption">${escapeHtml(caption)}</figcaption>
+    </figure>
+  `, { pageClass: "document-image-page", bodyClass: "document-image-body" });
+  }).join("");
 }
 
 function renderDocumentClosing(company, generatedAt) {

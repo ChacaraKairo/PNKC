@@ -4,6 +4,36 @@ import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer";
 
 const COMPANY_SITE_URL = "https://korucompany.com.br";
+const PDF_FOOTER_TEMPLATE = `
+  <style>
+    .pnkc-footer {
+      width: 100%;
+      margin: 0 12mm;
+      padding-top: 4px;
+      border-top: 1px solid #d8c9ad;
+      color: #5f5649;
+      font-family: Arial, sans-serif;
+      font-size: 8px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pnkc-footer span:nth-child(2) {
+      text-align: center;
+    }
+
+    .pnkc-footer span:last-child {
+      text-align: right;
+    }
+  </style>
+  <div class="pnkc-footer">
+    <span>Koru Company &mdash; Plano de Neg&oacute;cios</span>
+    <span>${COMPANY_SITE_URL}</span>
+    <span>Documento gerado pelo PNKC &middot; P&aacute;gina <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+  </div>
+`;
 
 const args = {};
 const cli = process.argv.slice(2);
@@ -52,12 +82,43 @@ try {
     await page.reload({ waitUntil: "networkidle0" });
   }
 
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     document.body.classList.add("puppeteer-pdf-mode");
-    window.buildPrintReport();
+    if (typeof window.buildPrintReport !== "function") {
+      throw new Error("window.buildPrintReport() nao esta disponivel.");
+    }
+
+    const reportReady = await window.buildPrintReport();
+    if (!reportReady) {
+      throw new Error("buildPrintReport() nao confirmou a preparacao do relatorio.");
+    }
   });
 
-  await page.waitForFunction(() => document.querySelectorAll(".document-page").length > 0);
+  await page.waitForFunction(() => document.querySelector("#printReport")?.dataset.ready === "true", { timeout: 30000 });
+
+  const reportStats = await page.evaluate(() => {
+    const report = document.querySelector("#printReport");
+    return {
+      pages: document.querySelectorAll("#printReport .document-page").length,
+      textLength: report?.textContent?.trim().length || 0,
+      imageCount: document.querySelectorAll("#printReport img").length
+    };
+  });
+
+  if (!reportStats.pages || (!reportStats.textLength && !reportStats.imageCount)) {
+    throw new Error("Relatorio vazio: #printReport nao contem paginas document-page preenchidas.");
+  }
+
+  await page.evaluate(async () => {
+    const images = Array.from(document.querySelectorAll("#printReport img"));
+    await Promise.all(images.map((img) => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+  });
 
   await page.emulateMediaType("print");
   await page.pdf({
@@ -66,36 +127,7 @@ try {
     printBackground: true,
     displayHeaderFooter: true,
     headerTemplate: "<div></div>",
-    footerTemplate: `
-      <style>
-        .pnkc-footer {
-          width: 100%;
-          margin: 0 12mm;
-          padding-top: 4px;
-          border-top: 1px solid #d8c9ad;
-          color: #5f5649;
-          font-family: Arial, sans-serif;
-          font-size: 8px;
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .pnkc-footer span:nth-child(2) {
-          text-align: center;
-        }
-
-        .pnkc-footer span:last-child {
-          text-align: right;
-        }
-      </style>
-      <div class="pnkc-footer">
-        <span>Koru Company — Plano de Negócios</span>
-        <span>${COMPANY_SITE_URL}</span>
-        <span>Documento gerado pelo PNKC · Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
-      </div>
-    `,
+    footerTemplate: PDF_FOOTER_TEMPLATE,
     preferCSSPageSize: true,
     margin: {
       top: "0",

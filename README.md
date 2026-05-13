@@ -75,8 +75,13 @@ Ela existe em `assets/js/app.js` para a pre-visualizacao HTML e em `scripts/expo
 1. O usuario edita normalmente o formulario.
 2. Ao imprimir/exportar, `window.buildPrintReport()` chama `createBusinessPlanDocumentHtml()`.
 3. Essa funcao monta o documento final com classes `document-*`.
-4. O navegador imprime essa versao HTML, ou o Puppeteer gera PDF a partir dela.
-5. No Puppeteer, o rodape HTML interno e ocultado e o `footerTemplate` adiciona site, texto institucional e `Pagina X de Y`.
+4. `#printReport` so recebe `data-ready="true"` depois que existem paginas `.document-page` e todas as imagens carregaram.
+5. O navegador imprime essa versao HTML, ou o Puppeteer gera PDF a partir dela.
+6. No Puppeteer, o rodape HTML interno e ocultado e o `footerTemplate` adiciona site, texto institucional e `Pagina X de Y`.
+
+Se o PDF sair vazio, verifique no console se `#printReport[data-ready="true"]` existe e se ha ao menos uma `.document-page`. O exportador via Puppeteer tambem valida isso e interrompe a geracao com erro claro quando o documento nao foi montado.
+
+Cada anexo/imagem do plano vira uma pagina propria no PDF, centralizada em orientacao retrato, com proporcao preservada por `object-fit: contain`.
 
 Mais detalhes em [`docs/fluxo-exportacao-pdf.md`](docs/fluxo-exportacao-pdf.md).
 
