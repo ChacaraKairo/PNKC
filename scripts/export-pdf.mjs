@@ -3,6 +3,8 @@ import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import puppeteer from "puppeteer";
 
+const COMPANY_SITE_URL = "https://korucompany.com.br";
+
 const args = {};
 const cli = process.argv.slice(2);
 
@@ -18,6 +20,12 @@ for (let index = 0; index < cli.length; index += 1) {
 const outPath = resolve(String(args.out || "dist/plano-pnkc.pdf"));
 const dataPath = args.data ? resolve(String(args.data)) : null;
 const indexPath = resolve("index.html");
+const browserExecutablePath = [
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  "C:/Program Files/Microsoft/Edge/Application/msedge.exe"
+].find((candidate) => candidate && existsSync(candidate));
 
 if (!existsSync(indexPath)) {
   throw new Error("index.html nao encontrado. Execute este comando na raiz do projeto.");
@@ -26,7 +34,8 @@ if (!existsSync(indexPath)) {
 mkdirSync(dirname(outPath), { recursive: true });
 
 const browser = await puppeteer.launch({
-  headless: "new"
+  headless: "new",
+  ...(browserExecutablePath ? { executablePath: browserExecutablePath } : {})
 });
 
 try {
@@ -44,12 +53,11 @@ try {
   }
 
   await page.evaluate(() => {
+    document.body.classList.add("puppeteer-pdf-mode");
     window.buildPrintReport();
   });
 
-  await page.addStyleTag({
-    content: "@media print { .print-page-footer { display: none !important; } }"
-  });
+  await page.waitForFunction(() => document.querySelectorAll(".document-page").length > 0);
 
   await page.emulateMediaType("print");
   await page.pdf({
@@ -60,28 +68,39 @@ try {
     headerTemplate: "<div></div>",
     footerTemplate: `
       <style>
-        .footer {
+        .pnkc-footer {
           width: 100%;
-          margin: 0 16mm;
+          margin: 0 12mm;
           padding-top: 4px;
           border-top: 1px solid #d8c9ad;
           color: #5f5649;
           font-family: Arial, sans-serif;
           font-size: 8px;
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .pnkc-footer span:nth-child(2) {
+          text-align: center;
+        }
+
+        .pnkc-footer span:last-child {
+          text-align: right;
         }
       </style>
-      <div class="footer">
+      <div class="pnkc-footer">
         <span>Koru Company — Plano de Negócios</span>
-        <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
+        <span>${COMPANY_SITE_URL}</span>
+        <span>Documento gerado pelo PNKC · Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
       </div>
     `,
     preferCSSPageSize: true,
     margin: {
       top: "0",
       right: "0",
-      bottom: "0",
+      bottom: "12mm",
       left: "0"
     }
   });

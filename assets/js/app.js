@@ -4,6 +4,7 @@ const MAX_LOGO_WIDTH = 900;
 const MAX_ATTACHMENT_WIDTH = 1400;
 const IMAGE_QUALITY = 0.78;
 const KORU_LOGO_SRC = "assets/img/koru-company.jpg";
+const COMPANY_SITE_URL = "https://korucompany.com.br";
 const HIDDEN_PRINT_FIELDS = new Set(["reportPrimaryColor", "reportAccentColor"]);
 const MONEY_FIELDS = new Set([
   "capitalInicial",
@@ -1007,9 +1008,11 @@ function printReport(button) {
   try {
     saveState();
     buildPrintReport();
-    showNotice("Relatório preparado. A janela de impressão será aberta.", "success");
+    document.body.classList.add("document-preview-active");
+    document.getElementById("printReport").scrollIntoView({ behavior: "smooth", block: "start" });
+    showNotice("Versão HTML de impressão preparada. A janela de impressão será aberta.", "success");
     buttonFeedback(button, "success", "Preparado");
-    window.print();
+    window.setTimeout(() => window.print(), 350);
   } catch {
     showNotice("Não foi possível preparar o relatório para impressão.", "error");
     buttonFeedback(button, "error", "Erro");
@@ -1018,6 +1021,10 @@ function printReport(button) {
 
 function buildPrintReport() {
   const report = document.getElementById("printReport");
+  report.innerHTML = createBusinessPlanDocumentHtml();
+}
+
+function createBusinessPlanDocumentHtml() {
   const company = getField("nomeEmpresa") || "Plano de Negócios";
   const location = getField("cidadeUf");
   const year = getField("ano") || new Date().getFullYear();
@@ -1025,59 +1032,76 @@ function buildPrintReport() {
   const primaryColor = sanitizeColor(getField("reportPrimaryColor"), "#171512");
   const accentColor = sanitizeColor(getField("reportAccentColor"), "#b08a4a");
   const printableSections = sections.filter(sectionHasPrintContent);
+  const generatedAt = new Date().toLocaleDateString("pt-BR");
 
-  report.innerHTML = `
+  return `
     <style>
       #printReport {
         --print-primary: ${primaryColor};
         --print-accent: ${accentColor};
       }
     </style>
-    <div class="print-page-brand" aria-hidden="true">
-      <img src="${KORU_LOGO_SRC}" alt="">
-    </div>
-    <div class="print-page-header" aria-hidden="true">
-      <img src="${KORU_LOGO_SRC}" alt="">
-      <span>${PDF_TITLE}</span>
-    </div>
-    <div class="print-page-footer" aria-hidden="true">
-      <span></span>
-      <span>${PDF_TITLE}</span>
-    </div>
-    <div class="print-cover">
-      <div class="print-cover-strip"></div>
-      <div class="print-cover-top">
-        <img class="print-koru-logo" src="${KORU_LOGO_SRC}" alt="KORU Company">
+    ${renderDocumentPage(`
+      <div class="document-cover-strip"></div>
+      <div class="document-cover-top">
+        <img class="document-koru-logo" src="${KORU_LOGO_SRC}" alt="KORU Company">
         <span>KORU COMPANY</span>
       </div>
-      <img class="print-logo" src="${businessLogo}" alt="Logo da empresa">
-      <p class="print-kicker">Plano de Negócios Estratégico</p>
+      <img class="document-logo" src="${businessLogo}" alt="Logo da empresa">
+      <p class="document-kicker">Plano de Negócios Estratégico</p>
       <h1>${escapeHtml(company)}</h1>
-      <p class="print-subtitle">${escapeHtml(getField("slogan") || "Plano de negócios completo, estruturado e pronto para apresentação.")}</p>
-      <dl class="print-meta">
+      <p class="document-subtitle">${escapeHtml(getField("slogan") || "Plano de negócios completo, estruturado e pronto para apresentação.")}</p>
+      <dl class="document-meta">
         <div><dt>Local</dt><dd>${escapeHtml(location || "Nao informado")}</dd></div>
         <div><dt>Ano</dt><dd>${escapeHtml(year)}</dd></div>
-        <div><dt>Gerado em</dt><dd>${new Date().toLocaleDateString("pt-BR")}</dd></div>
+        <div><dt>Gerado em</dt><dd>${generatedAt}</dd></div>
       </dl>
-    </div>
-    ${renderPrintSummary(printableSections)}
-    ${printableSections.map((section, index) => renderPrintSection(section, index)).join("")}
-    ${renderPrintClosing(company)}
+    `, { pageClass: "document-cover", hideChrome: true })}
+    ${renderDocumentSummary(printableSections)}
+    ${printableSections.map((section, index) => renderDocumentSection(section, index)).join("")}
+    ${renderDocumentImagePages()}
+    ${renderDocumentClosing(company, generatedAt)}
+  `;
+}
+
+function renderDocumentPage(content, options = {}) {
+  const pageClass = options.pageClass || "";
+  const hideChrome = options.hideChrome ? " no-page-chrome" : "";
+  const bodyClass = options.bodyClass || "";
+
+  return `
+    <section class="document-page ${pageClass}${hideChrome}">
+      <div class="document-watermark" aria-hidden="true"><img src="${KORU_LOGO_SRC}" alt=""></div>
+      ${options.hideChrome ? "" : `
+        <header class="document-header">
+          <img src="${KORU_LOGO_SRC}" alt="KORU Company">
+          <span>${PDF_TITLE}</span>
+        </header>
+      `}
+      <main class="document-body ${bodyClass}">
+        ${content}
+      </main>
+      ${options.hideChrome ? "" : `
+        <footer class="document-footer">
+          <span>Koru Company — Plano de Negócios</span>
+          <span>Documento gerado pelo PNKC</span>
+          <span>${COMPANY_SITE_URL}</span>
+        </footer>
+      `}
+    </section>
   `;
 }
 
 function sectionHasPrintContent(section) {
   const fields = (section.fields || []).filter((field) => !field.type && !HIDDEN_PRINT_FIELDS.has(field.name) && isFilled(state.fields[field.name]));
   const tables = (section.tables || []).filter((table) => (state.tables[table.id] || []).some((row) => row.some(isFilled)));
-  const hasImages = section.id === "anexos" && state.images.anexos.length;
   const hasFinanceValues = section.finance && ["receitaBruta", "custosFixos", "custosVariaveis", "lucroLiquido", "investimentoTotal"].some((field) => isFilled(state.fields[field]));
-  return Boolean(fields.length || tables.length || hasImages || hasFinanceValues);
+  return Boolean(fields.length || tables.length || hasFinanceValues);
 }
 
-function renderPrintSummary(printableSections) {
-  return `
-    <section class="print-summary">
-      <div class="print-summary-head">
+function renderDocumentSummary(printableSections) {
+  return renderDocumentPage(`
+      <div class="document-summary-head">
         <span>Sumário</span>
         <strong>Koru Company</strong>
       </div>
@@ -1085,44 +1109,48 @@ function renderPrintSummary(printableSections) {
       <ol>
         ${printableSections.map((section, index) => `<li><span>${String(index + 1).padStart(2, "0")}</span><strong>${section.title}</strong><em></em></li>`).join("")}
       </ol>
-    </section>
-  `;
+  `, { pageClass: "document-summary" });
 }
 
-function renderPrintSection(section, index) {
+function renderDocumentSection(section, index) {
   const fields = (section.fields || []).filter((field) => shouldPrintField(section, field));
   const tables = (section.tables || []).filter((table) => (state.tables[table.id] || []).some((row) => row.some(isFilled)));
-  const hasImages = section.id === "anexos" && state.images.anexos.length;
   const specialContent = renderSpecialPrintContent(section);
-  if (!fields.length && !tables.length && !hasImages && !specialContent) return "";
+  if (!fields.length && !tables.length && !specialContent) return "";
 
-  return `
-    <section class="print-section">
-      <div class="print-section-title">
+  return renderDocumentPage(`
+    <article class="document-section">
+      <div class="document-section-title">
         <span>${String(index + 1).padStart(2, "0")}</span>
         <h2>${section.title}</h2>
       </div>
-      ${fields.map((field) => `<p class="print-field"><strong>${field.label}</strong>${formatPrintValue(field, state.fields[field.name])}</p>`).join("")}
+      ${fields.map((field) => `<p class="document-field"><strong>${field.label}</strong>${formatDocumentValue(field, state.fields[field.name])}</p>`).join("")}
       ${specialContent}
-      ${tables.map(renderPrintTable).join("")}
-      ${hasImages ? `<div class="print-attachments">${state.images.anexos.map((image, imageIndex) => `<img src="${image}" alt="Anexo ${imageIndex + 1}">`).join("")}</div>` : ""}
-    </section>
-  `;
+      ${tables.map(renderDocumentTable).join("")}
+    </article>
+  `, { pageClass: "document-content-page" });
 }
 
-function renderPrintClosing(company) {
-  return `
-    <section class="print-closing">
+function renderDocumentImagePages() {
+  return (state.images.anexos || []).map((image, index) => renderDocumentPage(`
+    <div class="document-image-frame">
+      <img src="${image}" alt="Anexo ${index + 1}">
+    </div>
+    <p class="document-image-caption">Anexo ${index + 1}</p>
+  `, { pageClass: "document-image-page", bodyClass: "document-image-body" })).join("");
+}
+
+function renderDocumentClosing(company, generatedAt) {
+  return renderDocumentPage(`
       <img src="${KORU_LOGO_SRC}" alt="KORU Company">
       <p>Obrigado</p>
       <h2>${escapeHtml(company || "Koru Company")}</h2>
       <strong>Entender antes de desenvolver.</strong>
       <div>
         <span>Plano de Negócios — Koru Company</span>
-        <span>Documento gerado em ${new Date().toLocaleDateString("pt-BR")}</span>
+        <span>Documento gerado em ${generatedAt}</span>
       </div>
-    </section>
-  `;
+  `, { pageClass: "document-closing", hideChrome: true });
 }
 
 function shouldPrintField(section, field) {
@@ -1132,13 +1160,13 @@ function shouldPrintField(section, field) {
 }
 
 function renderSpecialPrintContent(section) {
-  if (section.id === "financeiro") return renderFinancialPrintDashboard();
-  if (section.id === "swot") return renderSwotPrintMatrix();
-  if (section.id === "cronograma") return renderTimelinePrintRoadmap();
+  if (section.id === "financeiro") return renderDocumentFinancialDashboard();
+  if (section.id === "swot") return renderDocumentSwotMatrix();
+  if (section.id === "cronograma") return renderDocumentTimelineRoadmap();
   return "";
 }
 
-function renderFinancialPrintDashboard() {
+function renderDocumentFinancialDashboard() {
   const receita = Number(state.fields.receitaBruta || 0);
   const fixos = Number(state.fields.custosFixos || 0);
   const variaveis = Number(state.fields.custosVariaveis || 0);
@@ -1154,9 +1182,9 @@ function renderFinancialPrintDashboard() {
   ];
 
   return `
-    <div class="print-finance-dashboard">
+    <div class="document-finance-dashboard">
       ${values.map(([label, value]) => `
-        <div class="print-finance-bar">
+        <div class="document-finance-bar">
           <div><strong>${label}</strong><span>${money(value)}</span></div>
           <i style="width:${Math.max(3, Math.round((value / maxValue) * 100))}%"></i>
         </div>
@@ -1165,7 +1193,7 @@ function renderFinancialPrintDashboard() {
   `;
 }
 
-function renderSwotPrintMatrix() {
+function renderDocumentSwotMatrix() {
   const items = [
     ["Forças", "forcas"],
     ["Fraquezas", "fraquezas"],
@@ -1176,25 +1204,25 @@ function renderSwotPrintMatrix() {
   if (!items.length) return "";
 
   return `
-    <div class="print-swot-matrix">
+    <div class="document-swot-matrix">
       ${items.map(([label, field]) => `
         <div>
           <strong>${label}</strong>
-          <p>${formatPrintValue({ name: field }, state.fields[field])}</p>
+          <p>${formatDocumentValue({ name: field }, state.fields[field])}</p>
         </div>
       `).join("")}
     </div>
   `;
 }
 
-function renderTimelinePrintRoadmap() {
+function renderDocumentTimelineRoadmap() {
   const rows = (state.tables.cronogramaTable || []).filter((row) => row.some(isFilled));
   if (!rows.length) return "";
 
   return `
-    <div class="print-roadmap">
+    <div class="document-roadmap">
       ${rows.map((row) => `
-        <div class="print-roadmap-item">
+        <div class="document-roadmap-item">
           <span>${escapeHtml(formatDate(row[2]) || "Prazo a definir")}</span>
           <strong>${escapeHtml(row[0] || "Atividade")}</strong>
           <p>${escapeHtml([row[1], row[3], row[4]].filter(Boolean).join(" • "))}</p>
@@ -1204,19 +1232,19 @@ function renderTimelinePrintRoadmap() {
   `;
 }
 
-function renderPrintTable(table) {
+function renderDocumentTable(table) {
   const rows = (state.tables[table.id] || []).filter((row) => row.some(isFilled));
   if (!rows.length) return "";
   return `
-    <table>
+    <table class="document-table">
       <caption><strong>${table.title}</strong></caption>
       <thead><tr>${table.columns.map((column) => `<th>${column}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map((row) => `<tr>${table.columns.map((_, index) => `<td>${formatPrintTableCell(table, index, row[index])}</td>`).join("")}</tr>`).join("")}</tbody>
+      <tbody>${rows.map((row) => `<tr>${table.columns.map((_, index) => `<td>${formatDocumentTableCell(table, index, row[index])}</td>`).join("")}</tr>`).join("")}</tbody>
     </table>
   `;
 }
 
-function formatPrintTableCell(table, columnIndex, value) {
+function formatDocumentTableCell(table, columnIndex, value) {
   if (!isFilled(value)) return "";
   if (table.dateColumn === columnIndex) return escapeHtml(formatDate(value));
   if (table.numericColumn === columnIndex) return money(value);
@@ -1228,7 +1256,7 @@ function sanitizeColor(value, fallback) {
   return /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
 }
 
-function formatPrintValue(field, value) {
+function formatDocumentValue(field, value) {
   if (field.inputType === "date") return escapeHtml(formatDate(value));
   if (MONEY_FIELDS.has(field.name)) return money(value);
   if (field.inputType === "number") return escapeHtml(String(value).replace(".", ","));

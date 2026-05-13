@@ -753,6 +753,384 @@ td textarea {
   display: none;
 }
 
+.document-preview-active .print-report {
+  display: block;
+  width: min(100%, 960px);
+  margin: 32px auto;
+  padding: 24px;
+  background: #e8e1d2;
+}
+
+.document-preview-active .document-page {
+  width: 210mm;
+  min-height: 297mm;
+  max-width: 100%;
+  margin: 0 auto 24px;
+  box-shadow: 0 20px 60px rgba(23, 21, 18, 0.22);
+  transform-origin: top center;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding: 18mm 16mm 15mm;
+  background: #f7f3ea;
+  isolation: isolate;
+}
+
+.document-preview-active .document-watermark {
+  position: absolute;
+  left: 50%;
+  bottom: 32mm;
+  width: 92mm;
+  transform: translateX(-50%);
+  opacity: 0.026;
+  filter: blur(0.35px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.document-preview-active .document-watermark img {
+  width: 100%;
+}
+
+.document-preview-active .document-header,
+.document-preview-active .document-footer,
+.document-preview-active .document-body {
+  position: relative;
+  z-index: 1;
+}
+
+.document-preview-active .document-header,
+.document-preview-active .document-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #625846;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.document-preview-active .document-header {
+  min-height: 13mm;
+  margin-bottom: 9mm;
+  padding-bottom: 3mm;
+  border-bottom: 1px solid #dacdaf;
+}
+
+.document-preview-active .document-header img {
+  width: 24mm;
+  max-height: 11mm;
+  object-fit: contain;
+}
+
+.document-preview-active .document-footer {
+  min-height: 9mm;
+  margin-top: auto;
+  padding-top: 3mm;
+  border-top: 1px solid #dacdaf;
+}
+
+.document-preview-active .document-body {
+  flex: 1 1 auto;
+}
+
+.document-preview-active .no-page-chrome {
+  padding: 0;
+}
+
+.document-preview-active .no-page-chrome .document-body {
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.document-preview-active .document-cover,
+.document-preview-active .document-closing {
+  background:
+    linear-gradient(135deg, rgba(23, 21, 18, 0.96), rgba(23, 21, 18, 0.88)),
+    url("../img/koru-company.jpg") center / cover no-repeat;
+  color: #f9f1df;
+  overflow: hidden;
+}
+
+.document-preview-active .document-cover .document-body,
+.document-preview-active .document-closing .document-body {
+  flex-direction: column;
+  justify-content: center;
+  padding: 34mm 22mm 28mm;
+}
+
+.document-preview-active .document-cover-strip {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 8mm;
+  background: linear-gradient(180deg, var(--print-accent, #b08a4a), #d8c18a);
+}
+
+.document-preview-active .document-cover-top {
+  position: absolute;
+  top: 14mm;
+  left: 22mm;
+  right: 18mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #f8edd7;
+  font-weight: 900;
+}
+
+.document-preview-active .document-koru-logo {
+  width: 38mm;
+  max-height: 20mm;
+  object-fit: contain;
+}
+
+.document-preview-active .document-logo {
+  width: 28mm;
+  height: 28mm;
+  object-fit: cover;
+  border-radius: 4mm;
+  margin-bottom: 9mm;
+}
+
+.document-preview-active .document-cover h1,
+.document-preview-active .document-closing h2,
+.document-preview-active .document-summary h2,
+.document-preview-active .document-section-title h2 {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.document-preview-active .document-cover h1 {
+  color: #fff7e8;
+  font-size: 38pt;
+  line-height: 1.05;
+}
+
+.document-preview-active .document-field,
+.document-preview-active .document-finance-dashboard,
+.document-preview-active .document-swot-matrix div,
+.document-preview-active .document-roadmap-item {
+  border: 1px solid #e0d6c5;
+  background: rgba(255, 252, 245, 0.92);
+}
+
+.document-preview-active .document-field {
+  margin: 0 0 5mm;
+  padding: 4.5mm 5mm;
+  border-left: 3px solid var(--print-accent, #b08a4a);
+  border-radius: 2mm;
+}
+
+.document-preview-active .document-field strong {
+  display: block;
+  margin-bottom: 1mm;
+  color: var(--print-primary, #171512);
+  font-size: 9.5pt;
+  text-transform: uppercase;
+}
+
+.document-preview-active .document-section-title {
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  margin: 0 0 7mm;
+}
+
+.document-preview-active .document-section-title span {
+  width: 16mm;
+  height: 12mm;
+  border-radius: 1mm;
+  display: grid;
+  place-items: center;
+  background: var(--print-primary, #171512);
+  color: #fff;
+  font-weight: 900;
+}
+
+.document-preview-active .document-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 8.7pt;
+}
+
+.document-preview-active .document-table th {
+  background: #201d19;
+  color: #f7e8c8;
+}
+
+.document-preview-active .document-table th,
+.document-preview-active .document-table td {
+  border: 1px solid #d9cfbd;
+  padding: 3.2mm;
+  vertical-align: top;
+}
+
+.document-preview-active .document-swot-matrix {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4mm;
+}
+
+.document-preview-active .document-image-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.document-preview-active .document-image-frame {
+  width: 174mm;
+  height: 226mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.document-preview-active .document-image-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.document-preview-active .document-subtitle {
+  max-width: 150mm;
+  margin: 4mm 0 10mm;
+  color: #efe2ca;
+  font-size: 14pt;
+}
+
+.document-preview-active .document-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4mm;
+  margin: 0;
+}
+
+.document-preview-active .document-meta div {
+  border-left: 3px solid var(--print-accent, #b08a4a);
+  padding-left: 3mm;
+}
+
+.document-preview-active .document-meta dt {
+  color: #d2c4ac;
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.document-preview-active .document-meta dd {
+  margin: 1mm 0 0;
+  color: #fff7e8;
+  font-weight: 800;
+}
+
+.document-preview-active .document-summary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 13mm;
+  color: var(--print-accent, #b08a4a);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.document-preview-active .document-summary ol {
+  display: grid;
+  gap: 4mm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.document-preview-active .document-summary li {
+  display: grid;
+  grid-template-columns: 16mm auto 1fr;
+  align-items: center;
+  gap: 5mm;
+  padding-bottom: 3mm;
+  border-bottom: 1px solid #ded3bf;
+  color: #263431;
+  font-size: 13pt;
+  font-weight: 700;
+}
+
+.document-preview-active .document-summary li span {
+  color: var(--print-accent, #b08a4a);
+  font-size: 18pt;
+  font-weight: 900;
+}
+
+.document-preview-active .document-summary li em {
+  display: block;
+  height: 1px;
+  border-bottom: 1px dotted #b8aa90;
+}
+
+.document-preview-active .document-finance-dashboard {
+  display: grid;
+  gap: 4mm;
+  margin: 0 0 7mm;
+  padding: 5mm;
+  border-radius: 2mm;
+}
+
+.document-preview-active .document-finance-bar div {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  margin-bottom: 1.5mm;
+  color: var(--print-primary, #171512);
+  font-size: 9pt;
+}
+
+.document-preview-active .document-finance-bar i {
+  display: block;
+  height: 3mm;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--print-primary, #171512), var(--print-accent, #b08a4a));
+}
+
+.document-preview-active .document-roadmap {
+  display: grid;
+  gap: 4mm;
+  margin-bottom: 7mm;
+}
+
+.document-preview-active .document-roadmap-item {
+  position: relative;
+  padding: 4mm 5mm 4mm 11mm;
+  border-radius: 2mm;
+}
+
+.document-preview-active .document-roadmap-item::before {
+  content: "";
+  position: absolute;
+  left: 4mm;
+  top: 5mm;
+  width: 3mm;
+  height: 3mm;
+  border-radius: 50%;
+  background: var(--print-accent, #b08a4a);
+  box-shadow: 0 0 0 2mm color-mix(in srgb, var(--print-accent, #b08a4a) 16%, white);
+}
+
+.document-preview-active .document-roadmap-item span {
+  display: block;
+  color: var(--print-accent, #b08a4a);
+  font-size: 8.5pt;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.document-preview-active .document-closing img {
+  width: 42mm;
+  max-height: 22mm;
+  object-fit: contain;
+  margin-bottom: 16mm;
+}
+
 @media (max-width: 1060px) {
   .header-inner {
     align-items: flex-start;
@@ -826,14 +1204,28 @@ td textarea {
   }
 }
 
+
+.puppeteer-pdf-mode .document-footer {
+  display: none !important;
+}
+
 @media print {
   @page {
-    margin: 22mm 16mm 18mm;
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 210mm;
+    min-height: 297mm;
+    background: #f7f3ea;
   }
 
   body {
-    background: #fff;
-    color: #111;
+    color: #1d1a16;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .site-header,
@@ -844,94 +1236,131 @@ td textarea {
 
   .print-report {
     display: block;
-    color: #1b2422;
-    font-family: "Inter", "Poppins", Arial, Helvetica, sans-serif;
-    font-size: 11pt;
-    line-height: 1.55;
-    padding: 0;
+    width: 210mm;
+    margin: 0 auto;
+    color: #1d1a16;
     background: #f7f3ea;
+    font-family: "Inter", "Poppins", Arial, Helvetica, sans-serif;
+    font-size: 10.6pt;
+    line-height: 1.52;
   }
 
-  .print-page-brand {
-    position: fixed;
+  .document-page {
+    width: 210mm;
+    min-height: 297mm;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    padding: 18mm 16mm 15mm;
+    background: #f7f3ea;
+    break-after: page;
+    page-break-after: always;
+    isolation: isolate;
+  }
+
+  .document-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .document-watermark {
+    position: absolute;
     left: 50%;
     bottom: 32mm;
-    width: 96mm;
+    width: 92mm;
     transform: translateX(-50%);
-    opacity: 0.028;
+    opacity: 0.026;
     filter: blur(0.35px);
-    z-index: -1;
-    text-align: center;
+    z-index: 0;
+    pointer-events: none;
   }
 
-  .print-page-brand img {
+  .document-watermark img {
     width: 100%;
     height: auto;
   }
 
-  .print-page-header,
-  .print-page-footer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 2;
+  .document-header,
+  .document-footer,
+  .document-body {
+    position: relative;
+    z-index: 1;
+  }
+
+  .document-header,
+  .document-footer {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: var(--print-primary, #171512);
-    font-size: 9pt;
+    color: #625846;
+    font-size: 8.5pt;
     font-weight: 700;
   }
 
-  .print-page-header {
-    top: -15mm;
-    left: 0;
-    right: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--print-primary, #12343b) 28%, white);
+  .document-header {
+    min-height: 13mm;
+    margin-bottom: 9mm;
     padding-bottom: 3mm;
+    border-bottom: 1px solid #dacdaf;
   }
 
-  .print-page-header img {
+  .document-header img {
     width: 24mm;
-    max-height: 12mm;
+    max-height: 11mm;
     object-fit: contain;
   }
 
-  .print-page-footer {
-    bottom: -12mm;
-    left: 0;
-    right: 0;
-    border-top: 1px solid color-mix(in srgb, var(--print-accent, #197278) 32%, white);
+  .document-footer {
+    min-height: 9mm;
+    margin-top: auto;
     padding-top: 3mm;
-    color: #5c6764;
+    border-top: 1px solid #dacdaf;
   }
 
-  .print-page-footer span:first-child {
-    display: none;
-  }
-
-  .print-page-footer span:last-child {
+  .document-footer span:last-child {
     margin-left: auto;
     text-align: right;
   }
 
-  .print-cover {
-    min-height: 257mm;
+  .document-body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .no-page-chrome {
+    padding: 0;
+  }
+
+  .no-page-chrome .document-body {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    padding: 34mm 22mm 28mm;
-    border: 0;
+    flex: 1 1 auto;
+  }
+
+  .document-cover .document-watermark,
+  .document-closing .document-watermark {
+    display: none;
+  }
+
+  .document-cover {
     background:
       linear-gradient(135deg, rgba(23, 21, 18, 0.96), rgba(23, 21, 18, 0.88)),
       url("../img/koru-company.jpg") center / cover no-repeat;
     color: #f9f1df;
-    page-break-after: always;
+    overflow: hidden;
   }
 
-  .print-cover::after {
+  .document-cover .document-body {
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    padding: 34mm 22mm 28mm;
+    overflow: hidden;
+  }
+
+  .document-cover .document-body::after {
     content: "KORU";
     position: absolute;
     right: -14mm;
@@ -943,14 +1372,14 @@ td textarea {
     letter-spacing: 0;
   }
 
-  .print-cover-strip {
+  .document-cover-strip {
     position: absolute;
     inset: 0 auto 0 0;
     width: 8mm;
     background: linear-gradient(180deg, var(--print-accent, #b08a4a), #d8c18a);
   }
 
-  .print-cover-top {
+  .document-cover-top {
     position: absolute;
     top: 14mm;
     left: 22mm;
@@ -962,55 +1391,14 @@ td textarea {
     font-weight: 900;
   }
 
-  .print-koru-logo {
+  .document-koru-logo {
     width: 38mm;
     max-height: 20mm;
     object-fit: contain;
     filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.28));
   }
 
-  .print-kicker {
-    margin: 0 0 8mm;
-    color: #d8c18a;
-    font-size: 12pt;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0;
-  }
-
-  .print-subtitle {
-    max-width: 150mm;
-    margin: 4mm 0 10mm;
-    color: #efe2ca;
-    font-size: 14pt;
-  }
-
-  .print-meta {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4mm;
-    margin: 0;
-  }
-
-  .print-meta div {
-    border-left: 3px solid var(--print-accent, #b08a4a);
-    padding-left: 3mm;
-  }
-
-  .print-meta dt {
-    color: #d2c4ac;
-    font-size: 8pt;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .print-meta dd {
-    margin: 1mm 0 0;
-    color: #fff7e8;
-    font-weight: 800;
-  }
-
-  .print-logo {
+  .document-logo {
     width: 28mm;
     height: 28mm;
     object-fit: cover;
@@ -1019,7 +1407,16 @@ td textarea {
     margin-bottom: 9mm;
   }
 
-  .print-cover h1 {
+  .document-kicker {
+    margin: 0 0 8mm;
+    color: #d8c18a;
+    font-size: 12pt;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0;
+  }
+
+  .document-cover h1 {
     max-width: 165mm;
     margin: 0;
     color: #fff7e8;
@@ -1028,160 +1425,53 @@ td textarea {
     line-height: 1.05;
   }
 
-  .print-section {
-    position: relative;
-    page-break-inside: avoid;
-    break-inside: avoid;
-    margin: 0 0 13mm;
-    padding: 12mm 0 0;
+  .document-subtitle {
+    max-width: 150mm;
+    margin: 4mm 0 10mm;
+    color: #efe2ca;
+    font-size: 14pt;
   }
 
-  .print-section::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 40mm;
-    height: 1.2mm;
-    background: var(--print-accent, #b08a4a);
-  }
-
-  .print-section-title {
-    display: flex;
-    align-items: center;
-    gap: 5mm;
-    margin: 0 0 7mm;
-    break-after: avoid;
-  }
-
-  .print-section-title span {
-    width: 16mm;
-    height: 12mm;
-    border-radius: 1mm;
+  .document-meta {
     display: grid;
-    place-items: center;
-    background: var(--print-primary, #171512);
-    color: #fff;
-    font-size: 8pt;
-    font-weight: 900;
-  }
-
-  .print-section-title h2 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4mm;
     margin: 0;
-    color: var(--print-primary, #171512);
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 24pt;
-    line-height: 1.1;
-    text-transform: uppercase;
   }
 
-  .print-field {
-    margin: 0 0 5mm;
-    padding: 4.5mm 5mm;
-    border: 1px solid #e0d6c5;
+  .document-meta div {
     border-left: 3px solid var(--print-accent, #b08a4a);
-    border-radius: 2mm;
-    background: rgba(255, 252, 245, 0.92);
-    break-inside: avoid;
-    page-break-inside: avoid;
+    padding-left: 3mm;
   }
 
-  .print-field strong {
-    display: block;
-    margin-bottom: 1mm;
-    color: var(--print-primary, #171512);
-    font-size: 9.5pt;
+  .document-meta dt {
+    color: #d2c4ac;
+    font-size: 8pt;
+    font-weight: 700;
     text-transform: uppercase;
   }
 
-  .print-report table {
-    width: 100%;
-    margin: 5mm 0 7mm;
-    border-collapse: collapse;
-    table-layout: fixed;
-    background: #fffaf1;
-    font-size: 8.8pt;
-    line-height: 1.42;
-    page-break-inside: avoid;
-    break-inside: avoid;
+  .document-meta dd {
+    margin: 1mm 0 0;
+    color: #fff7e8;
+    font-weight: 800;
   }
 
-  .print-report caption {
-    margin-bottom: 2mm;
-    color: var(--print-primary, #171512);
-    text-align: left;
-    font-size: 11pt;
+  .document-summary .document-body {
+    padding-top: 6mm;
   }
 
-  .print-report th {
-    background: #201d19;
-    color: #f7e8c8;
-  }
-
-  .print-report th,
-  .print-report td {
-    border: 1px solid #d9cfbd;
-    padding: 3.6mm;
-    vertical-align: top;
-    overflow-wrap: anywhere;
-    word-break: normal;
-  }
-
-  .print-report tr:nth-child(even) td {
-    background: #f3eee4;
-  }
-
-  .print-attachments {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 5mm;
-    margin-top: 6mm;
-  }
-
-  .print-attachments img {
-    width: 100%;
-    max-height: 70mm;
-    object-fit: contain;
-    border: 1px solid #cfdad6;
-    border-radius: 2mm;
-    background: #fff;
-    padding: 2mm;
-  }
-
-  .print-cover,
-  .print-section {
-    break-inside: avoid;
-  }
-
-  .print-summary {
-    min-height: 257mm;
-    padding: 24mm 4mm 12mm;
-    page-break-after: always;
-    break-after: page;
-    position: relative;
-  }
-
-  .print-summary::before {
-    content: "";
-    position: absolute;
-    top: 18mm;
-    left: 0;
-    width: 18mm;
-    height: 3mm;
-    background: var(--print-accent, #b08a4a);
-  }
-
-  .print-summary-head {
+  .document-summary-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 14mm;
+    margin-bottom: 13mm;
     color: var(--print-accent, #b08a4a);
     font-weight: 900;
     text-transform: uppercase;
   }
 
-  .print-summary h2 {
+  .document-summary h2 {
     margin: 0 0 12mm;
     color: var(--print-primary, #171512);
     font-family: Georgia, "Times New Roman", serif;
@@ -1189,7 +1479,7 @@ td textarea {
     line-height: 1;
   }
 
-  .print-summary ol {
+  .document-summary ol {
     display: grid;
     gap: 4mm;
     margin: 0;
@@ -1197,7 +1487,7 @@ td textarea {
     list-style: none;
   }
 
-  .print-summary li {
+  .document-summary li {
     display: grid;
     grid-template-columns: 16mm auto 1fr;
     align-items: center;
@@ -1209,19 +1499,140 @@ td textarea {
     font-weight: 700;
   }
 
-  .print-summary li span {
+  .document-summary li span {
     color: var(--print-accent, #b08a4a);
     font-size: 18pt;
     font-weight: 900;
   }
 
-  .print-summary li em {
+  .document-summary li em {
     display: block;
     height: 1px;
     border-bottom: 1px dotted #b8aa90;
   }
 
-  .print-finance-dashboard {
+  .document-section {
+    position: relative;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .document-section::before {
+    content: "";
+    display: block;
+    width: 40mm;
+    height: 1.2mm;
+    margin-bottom: 7mm;
+    background: var(--print-accent, #b08a4a);
+  }
+
+  .document-section-title {
+    display: flex;
+    align-items: center;
+    gap: 5mm;
+    margin: 0 0 7mm;
+    break-after: avoid;
+  }
+
+  .document-section-title span {
+    width: 16mm;
+    height: 12mm;
+    border-radius: 1mm;
+    display: grid;
+    place-items: center;
+    background: var(--print-primary, #171512);
+    color: #fff;
+    font-size: 8pt;
+    font-weight: 900;
+  }
+
+  .document-section-title h2 {
+    margin: 0;
+    color: var(--print-primary, #171512);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 23pt;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .document-field {
+    margin: 0 0 5mm;
+    padding: 4.5mm 5mm;
+    border: 1px solid #e0d6c5;
+    border-left: 3px solid var(--print-accent, #b08a4a);
+    border-radius: 2mm;
+    background: rgba(255, 252, 245, 0.92);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .document-field strong {
+    display: block;
+    margin-bottom: 1mm;
+    color: var(--print-primary, #171512);
+    font-size: 9.5pt;
+    text-transform: uppercase;
+  }
+
+  .document-table {
+    width: 100%;
+    margin: 5mm 0 7mm;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #fffaf1;
+    font-size: 8.7pt;
+    line-height: 1.42;
+  }
+
+  .document-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .document-table thead {
+    display: table-header-group;
+  }
+
+  .document-table tfoot {
+    display: table-footer-group;
+  }
+
+  .print-report caption {
+    margin-bottom: 2mm;
+    color: var(--print-primary, #171512);
+    text-align: left;
+    font-size: 11pt;
+  }
+
+  .document-table th {
+    background: #201d19;
+    color: #f7e8c8;
+  }
+
+  .document-table th,
+  .document-table td {
+    border: 1px solid #d9cfbd;
+    padding: 3.2mm;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .document-table tr:nth-child(even) td {
+    background: #f3eee4;
+  }
+
+  .document-finance-dashboard,
+  .document-swot-matrix,
+  .document-roadmap,
+  .document-roadmap-item,
+  .document-finance-bar,
+  .document-swot-matrix div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .document-finance-dashboard {
     display: grid;
     gap: 4mm;
     margin: 0 0 7mm;
@@ -1229,10 +1640,9 @@ td textarea {
     border: 1px solid #ded3bf;
     border-radius: 2mm;
     background: #fffaf1;
-    break-inside: avoid;
   }
 
-  .print-finance-bar div {
+  .document-finance-bar div {
     display: flex;
     justify-content: space-between;
     gap: 4mm;
@@ -1241,22 +1651,21 @@ td textarea {
     font-size: 9pt;
   }
 
-  .print-finance-bar i {
+  .document-finance-bar i {
     display: block;
     height: 3mm;
     border-radius: 99px;
     background: linear-gradient(90deg, var(--print-primary, #171512), var(--print-accent, #b08a4a));
   }
 
-  .print-swot-matrix {
+  .document-swot-matrix {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 4mm;
     margin-bottom: 7mm;
-    break-inside: avoid;
   }
 
-  .print-swot-matrix div {
+  .document-swot-matrix div {
     min-height: 42mm;
     padding: 5mm;
     border: 1px solid #ded3bf;
@@ -1265,34 +1674,32 @@ td textarea {
     background: rgba(255, 250, 241, 0.94);
   }
 
-  .print-swot-matrix strong {
+  .document-swot-matrix strong {
     display: block;
     margin-bottom: 2mm;
     color: var(--print-primary, #171512);
     font-size: 13pt;
   }
 
-  .print-swot-matrix p {
+  .document-swot-matrix p {
     margin: 0;
   }
 
-  .print-roadmap {
+  .document-roadmap {
     display: grid;
     gap: 4mm;
     margin-bottom: 7mm;
-    break-inside: avoid;
   }
 
-  .print-roadmap-item {
+  .document-roadmap-item {
     position: relative;
     padding: 4mm 5mm 4mm 11mm;
     border: 1px solid #ded3bf;
     border-radius: 2mm;
     background: #fffaf1;
-    break-inside: avoid;
   }
 
-  .print-roadmap-item::before {
+  .document-roadmap-item::before {
     content: "";
     position: absolute;
     left: 4mm;
@@ -1304,7 +1711,7 @@ td textarea {
     box-shadow: 0 0 0 2mm color-mix(in srgb, var(--print-accent, #b08a4a) 16%, white);
   }
 
-  .print-roadmap-item span {
+  .document-roadmap-item span {
     display: block;
     color: var(--print-accent, #b08a4a);
     font-size: 8.5pt;
@@ -1312,31 +1719,63 @@ td textarea {
     text-transform: uppercase;
   }
 
-  .print-roadmap-item strong {
+  .document-roadmap-item strong {
     display: block;
     margin: 1mm 0;
     color: var(--print-primary, #171512);
     font-size: 12pt;
   }
 
-  .print-roadmap-item p {
+  .document-roadmap-item p {
     margin: 0;
     color: #52605c;
   }
 
-  .print-cover {
+  .document-image-page {
+    break-before: page;
+    page-break-before: always;
+    break-after: page;
     page-break-after: always;
+    overflow: hidden;
   }
 
-  .print-closing {
-    min-height: 257mm;
-    page-break-before: always;
-    break-before: page;
+  .document-image-body {
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
-    position: relative;
-    padding: 24mm;
+    min-height: 230mm;
+  }
+
+  .document-image-frame {
+    width: 174mm;
+    height: 226mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d8c9ad;
+    border-radius: 2mm;
+    background: #fffaf1;
+    padding: 4mm;
+  }
+
+  .document-image-frame img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .document-image-caption {
+    margin: 4mm 0 0;
+    color: #625846;
+    font-size: 9pt;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .document-closing {
     background:
       linear-gradient(135deg, rgba(23, 21, 18, 0.94), rgba(23, 21, 18, 0.86)),
       url("../img/koru-company.jpg") center / cover no-repeat;
@@ -1344,7 +1783,15 @@ td textarea {
     overflow: hidden;
   }
 
-  .print-closing::after {
+  .document-closing .document-body {
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24mm;
+    overflow: hidden;
+  }
+
+  .document-closing .document-body::after {
     content: "KORU";
     position: absolute;
     right: -12mm;
@@ -1355,35 +1802,35 @@ td textarea {
     opacity: 0.08;
   }
 
-  .print-closing img {
+  .document-closing img {
     width: 42mm;
     max-height: 22mm;
     object-fit: contain;
     margin-bottom: 16mm;
   }
 
-  .print-closing p {
+  .document-closing p {
     margin: 0 0 4mm;
     color: var(--print-accent, #b08a4a);
     font-weight: 900;
     text-transform: uppercase;
   }
 
-  .print-closing h2 {
+  .document-closing h2 {
     margin: 0;
     font-family: Georgia, "Times New Roman", serif;
     font-size: 34pt;
     line-height: 1;
   }
 
-  .print-closing strong {
+  .document-closing strong {
     display: block;
     margin-top: 7mm;
     font-size: 15pt;
     color: #f2dfba;
   }
 
-  .print-closing div {
+  .document-closing div {
     display: grid;
     gap: 2mm;
     margin-top: 18mm;

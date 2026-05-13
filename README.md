@@ -45,7 +45,9 @@ http://localhost:8000
 
 ## Como gerar PDF profissional
 
-O botao **Imprimir/PDF** continua funcionando no navegador. Para gerar um PDF final sem URL local, sem data/horario automaticos do navegador e com numeracao de paginas controlada, use o exportador Puppeteer:
+O botao **Imprimir/PDF** monta primeiro uma versao HTML limpa do documento e depois abre a impressao. Essa versao nao reutiliza a tela de edicao; ela e construida por uma camada propria de documento em `assets/js/app.js`.
+
+Para gerar um PDF final sem URL local, sem data/horario automaticos do navegador, com rodape institucional e numeracao de paginas, use o exportador Puppeteer:
 
 ```powershell
 npm install
@@ -58,7 +60,25 @@ Para gerar o PDF a partir de um JSON exportado pelo sistema:
 npm run export:pdf -- --data plano-de-negocios.json --out dist/plano-pnkc.pdf
 ```
 
-Esse modo usa `printBackground: true`, CSS de impressao em A4 e rodape proprio com numeracao. Ele nao imprime a URL `localhost`.
+Esse modo usa `displayHeaderFooter: true`, `footerTemplate`, `printBackground: true` e o HTML final de impressao em A4. Ele nao imprime a URL `localhost`.
+
+O site da empresa no rodape fica centralizado na constante:
+
+```js
+const COMPANY_SITE_URL = "https://korucompany.com.br";
+```
+
+Ela existe em `assets/js/app.js` para a pre-visualizacao HTML e em `scripts/export-pdf.mjs` para o rodape numerado do Puppeteer.
+
+## Fluxo HTML -> PDF
+
+1. O usuario edita normalmente o formulario.
+2. Ao imprimir/exportar, `window.buildPrintReport()` chama `createBusinessPlanDocumentHtml()`.
+3. Essa funcao monta o documento final com classes `document-*`.
+4. O navegador imprime essa versao HTML, ou o Puppeteer gera PDF a partir dela.
+5. No Puppeteer, o rodape HTML interno e ocultado e o `footerTemplate` adiciona site, texto institucional e `Pagina X de Y`.
+
+Mais detalhes em [`docs/fluxo-exportacao-pdf.md`](docs/fluxo-exportacao-pdf.md).
 
 ## Estrutura do projeto
 
