@@ -130,7 +130,7 @@ try {
   }
 
   await page.evaluate(async () => {
-    document.body.classList.add("puppeteer-pdf-mode");
+    document.body.classList.add("document-preview-active", "puppeteer-pdf-mode");
     if (typeof window.buildPrintReport !== "function") {
       throw new Error("window.buildPrintReport() nao esta disponivel.");
     }
@@ -203,7 +203,7 @@ try {
     const debugScreenshotPath = resolve(dirname(outPath), "debug-print-report.png");
     const reportHtml = await page.evaluate(() => {
       const report = document.querySelector("#printReport");
-      return `<!doctype html><html><head><meta charset="utf-8"><title>PNKC Debug Print Report</title><link rel="stylesheet" href="../assets/css/styles.css"></head><body class="document-preview-active">${report?.outerHTML || ""}</body></html>`;
+      return `<!doctype html><html><head><meta charset="utf-8"><title>PNKC Debug Print Report</title><link rel="stylesheet" href="../assets/css/styles.css"></head><body class="document-preview-active puppeteer-pdf-mode">${report?.outerHTML || ""}</body></html>`;
     });
     writeFileSync(debugHtmlPath, reportHtml, "utf8");
     await page.screenshot({ path: debugScreenshotPath, fullPage: true });

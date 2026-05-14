@@ -643,4 +643,18 @@
     color: #d8c18a;
     font-size: 10pt;
   }
+
+  body.puppeteer-pdf-mode .print-report,
+  body.document-preview-active .print-report {
+    display: block !important;
+  }
+
+  body.puppeteer-pdf-mode #printReport {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  body.puppeteer-pdf-mode #printReport .document-page {
+    display: flex !important;
+  }
 }
