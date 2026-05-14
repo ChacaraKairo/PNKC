@@ -45,7 +45,7 @@ http://localhost:8000
 
 ## Como gerar PDF profissional
 
-O botao **Imprimir/PDF** monta primeiro uma versao HTML limpa do documento e depois abre a impressao. Essa versao nao reutiliza a tela de edicao; ela e construida por uma camada propria de documento em `assets/js/app.js`.
+O botao **Imprimir/PDF** monta primeiro uma versao HTML limpa do documento e depois abre a impressao. Essa versao nao reutiliza a tela de edicao; ela e construida pela camada de documento em `assets/js/features/print-report.js`.
 
 Para gerar um PDF final sem URL local, sem data/horario automaticos do navegador, com rodape institucional e numeracao de paginas, use o exportador Puppeteer:
 
@@ -79,7 +79,7 @@ O site da empresa no rodape fica centralizado na constante:
 const COMPANY_SITE_URL = "https://korucompany.com.br";
 ```
 
-Ela existe em `assets/js/app.js` para a pre-visualizacao HTML e em `scripts/export-pdf.mjs` para o rodape numerado do Puppeteer.
+Ela existe em `assets/js/config/constants.js` para a pre-visualizacao HTML e em `scripts/export-pdf.mjs` para o rodape numerado do Puppeteer.
 
 ## Fluxo HTML -> PDF
 
@@ -106,34 +106,47 @@ Os indicadores usam preferencialmente os totais das tabelas preenchidas. Quando 
 
 ```text
 .
-├── index.html
-├── site-plano-de-negocios.html
-├── README.md
-├── .editorconfig
-├── .gitattributes
-├── .gitignore
-├── assets
-│   ├── css
-│   │   └── styles.css
-│   ├── img
-│   │   └── hero.jpg
-│   ├── js
-│   │   └── app.js
-│   └── favicon.svg
-└── docs
-    ├── README.md
-    ├── media
-    │   └── imagem-original.jpg
-    └── references
-        └── PDFs de apoio
+|-- index.html
+|-- canvas.html
+|-- site-plano-de-negocios.html
+|-- README.md
+|-- assets
+|   |-- css
+|   |   |-- styles.css
+|   |   |-- base.css
+|   |   |-- layout.css
+|   |   |-- responsive.css
+|   |   |-- components/
+|   |   `-- document/
+|   |-- img/
+|   |-- js
+|   |   |-- app.js
+|   |   |-- config/
+|   |   |-- core/
+|   |   |-- data/
+|   |   |-- features/
+|   |   `-- ui/
+|   `-- favicon.svg
+|-- docs
+|   |-- media/
+|   `-- references/
+`-- scripts
+    `-- export-pdf.mjs
 ```
 
 ## Pastas principais
 
 - `index.html`: entrada principal do site.
 - `site-plano-de-negocios.html`: arquivo legado mantido para compatibilidade, redirecionando para `index.html`.
-- `assets/css`: estilos da aplicacao.
-- `assets/js`: logica de formulario, salvamento, calculos, importacao/exportacao e impressao.
+- `assets/css/styles.css`: entrada de estilos. Importa base, layout, componentes, responsivo e estilos de documento/impressao.
+- `assets/css/components`: estilos de formularios, tabelas, cards financeiros e anexos.
+- `assets/css/document`: estilos da pre-visualizacao e impressao A4.
+- `assets/js/app.js`: bootstrap da aplicacao. Inicializa estado, registra funcoes globais esperadas pelo exportador e chama `renderApp()`.
+- `assets/js/config`: constantes compartilhadas, como chaves de storage, limites de imagem e dados institucionais.
+- `assets/js/data`: schema das etapas, campos, tabelas e textos de ajuda do plano.
+- `assets/js/core`: estado, persistencia, leitura de formulario, formatadores, helpers HTML e diagnosticos.
+- `assets/js/ui`: renderizacao do formulario, eventos de navegacao e progresso.
+- `assets/js/features`: recursos de dominio, como imagens, financeiro, importacao/exportacao e relatorio de impressao.
 - `assets/img`: imagens usadas pela interface publicada.
 - `docs/references`: PDFs usados como referencia de conteudo.
 - `docs/media`: arquivos de midia originais ou materiais que nao precisam ser carregados diretamente pelo site.

@@ -1,0 +1,646 @@
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 210mm;
+    min-height: 297mm;
+    background: #f7f3ea;
+  }
+
+  body {
+    color: #1d1a16;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .site-header,
+  main,
+  .skip-link {
+    display: none !important;
+  }
+
+  .print-report {
+    display: block;
+    width: 210mm;
+    margin: 0 auto;
+    color: #1d1a16;
+    background: #f7f3ea;
+    font-family: "Inter", "Poppins", Arial, Helvetica, sans-serif;
+    font-size: 10.6pt;
+    line-height: 1.52;
+  }
+
+  .document-page {
+    width: 210mm;
+    min-height: 297mm;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    padding: 18mm 16mm 15mm;
+    background: #f7f3ea;
+    break-after: page;
+    page-break-after: always;
+    isolation: isolate;
+  }
+
+  .document-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .document-watermark {
+    position: absolute;
+    left: 50%;
+    bottom: 32mm;
+    width: 92mm;
+    transform: translateX(-50%);
+    opacity: 0.026;
+    filter: blur(0.35px);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .document-watermark img {
+    width: 100%;
+    height: auto;
+  }
+
+  .document-header,
+  .document-footer,
+  .document-body {
+    position: relative;
+    z-index: 1;
+  }
+
+  .document-header,
+  .document-footer {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #625846;
+    font-size: 8.5pt;
+    font-weight: 700;
+  }
+
+  .document-header {
+    min-height: 13mm;
+    margin-bottom: 9mm;
+    padding-bottom: 3mm;
+    border-bottom: 1px solid #dacdaf;
+  }
+
+  .document-header img {
+    width: 24mm;
+    max-height: 11mm;
+    object-fit: contain;
+  }
+
+  .document-footer {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 4mm;
+    min-height: 9mm;
+    margin-top: auto;
+    padding-top: 3mm;
+    border-top: 1px solid #dacdaf;
+  }
+
+  .document-footer span:nth-child(2) {
+    text-align: center;
+  }
+
+  .document-footer span:last-child {
+    text-align: right;
+  }
+
+  .document-body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .no-page-chrome {
+    padding: 0;
+  }
+
+  .no-page-chrome .document-body {
+    display: flex;
+    flex: 1 1 auto;
+  }
+
+  .document-cover .document-watermark,
+  .document-closing .document-watermark {
+    display: none;
+  }
+
+  .document-cover {
+    background:
+      linear-gradient(135deg, rgba(23, 21, 18, 0.96), rgba(23, 21, 18, 0.88)),
+      url("../img/koru-company.jpg") center / cover no-repeat;
+    color: #f9f1df;
+    overflow: hidden;
+  }
+
+  .document-cover .document-body {
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    padding: 34mm 22mm 28mm;
+    overflow: hidden;
+  }
+
+  .document-cover .document-body::after {
+    content: "KORU";
+    position: absolute;
+    right: -14mm;
+    bottom: 7mm;
+    color: var(--print-accent, #b08a4a);
+    font-size: 68pt;
+    font-weight: 900;
+    opacity: 0.055;
+    letter-spacing: 0;
+  }
+
+  .document-cover-strip {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 8mm;
+    background: linear-gradient(180deg, var(--print-accent, #b08a4a), #d8c18a);
+  }
+
+  .document-cover-top {
+    position: absolute;
+    top: 14mm;
+    left: 22mm;
+    right: 18mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #f8edd7;
+    font-weight: 900;
+  }
+
+  .document-koru-logo {
+    width: 38mm;
+    max-height: 20mm;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.28));
+  }
+
+  .document-logo {
+    width: 28mm;
+    height: 28mm;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 4mm;
+    margin-bottom: 9mm;
+  }
+
+  .document-kicker {
+    margin: 0 0 8mm;
+    color: #d8c18a;
+    font-size: 12pt;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0;
+  }
+
+  .document-cover h1 {
+    max-width: 165mm;
+    margin: 0;
+    color: #fff7e8;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 38pt;
+    line-height: 1.05;
+  }
+
+  .document-subtitle {
+    max-width: 150mm;
+    margin: 4mm 0 10mm;
+    color: #efe2ca;
+    font-size: 14pt;
+  }
+
+  .document-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4mm;
+    margin: 0;
+  }
+
+  .document-meta div {
+    border-left: 3px solid var(--print-accent, #b08a4a);
+    padding-left: 3mm;
+  }
+
+  .document-meta dt {
+    color: #d2c4ac;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .document-meta dd {
+    margin: 1mm 0 0;
+    color: #fff7e8;
+    font-weight: 800;
+  }
+
+  .document-summary .document-body {
+    padding-top: 6mm;
+  }
+
+  .document-summary-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 13mm;
+    color: var(--print-accent, #b08a4a);
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .document-summary h2 {
+    margin: 0 0 12mm;
+    color: var(--print-primary, #171512);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 28pt;
+    line-height: 1;
+  }
+
+  .document-summary ol {
+    display: grid;
+    gap: 4mm;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .document-summary li {
+    display: grid;
+    grid-template-columns: 16mm auto 1fr;
+    align-items: center;
+    gap: 5mm;
+    padding-bottom: 3mm;
+    border-bottom: 1px solid #ded3bf;
+    color: #263431;
+    font-size: 13pt;
+    font-weight: 700;
+  }
+
+  .document-summary li span {
+    color: var(--print-accent, #b08a4a);
+    font-size: 18pt;
+    font-weight: 900;
+  }
+
+  .document-summary li em {
+    display: block;
+    height: 1px;
+    border-bottom: 1px dotted #b8aa90;
+  }
+
+  .document-section {
+    position: relative;
+  }
+
+  .document-section::before {
+    content: "";
+    display: block;
+    width: 40mm;
+    height: 1.2mm;
+    margin-bottom: 7mm;
+    background: var(--print-accent, #b08a4a);
+  }
+
+  .document-section-title {
+    display: flex;
+    align-items: center;
+    gap: 5mm;
+    margin: 0 0 7mm;
+    break-after: avoid;
+  }
+
+  .document-section-title span {
+    width: 16mm;
+    height: 12mm;
+    border-radius: 1mm;
+    display: grid;
+    place-items: center;
+    background: var(--print-primary, #171512);
+    color: #fff;
+    font-size: 8pt;
+    font-weight: 900;
+  }
+
+  .document-section-title h2 {
+    margin: 0;
+    color: var(--print-primary, #171512);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 23pt;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .document-field {
+    margin: 0 0 5mm;
+    padding: 4.5mm 5mm;
+    border: 1px solid #e0d6c5;
+    border-left: 3px solid var(--print-accent, #b08a4a);
+    border-radius: 2mm;
+    background: rgba(255, 252, 245, 0.92);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .document-field strong {
+    display: block;
+    margin-bottom: 1mm;
+    color: var(--print-primary, #171512);
+    font-size: 9.5pt;
+    text-transform: uppercase;
+  }
+
+  .document-table {
+    width: 100%;
+    margin: 5mm 0 7mm;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #fffaf1;
+    font-size: 8.7pt;
+    line-height: 1.42;
+  }
+
+  .document-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .document-table thead {
+    display: table-header-group;
+  }
+
+  .document-table tfoot {
+    display: table-footer-group;
+  }
+
+  .document-table caption {
+    margin-bottom: 2mm;
+    color: var(--print-primary, #171512);
+    text-align: left;
+    font-size: 11pt;
+  }
+
+  .document-table th {
+    background: #201d19;
+    color: #f7e8c8;
+  }
+
+  .document-table th,
+  .document-table td {
+    border: 1px solid #d9cfbd;
+    padding: 3.2mm;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .document-table tr:nth-child(even) td {
+    background: #f3eee4;
+  }
+
+  .document-finance-dashboard,
+  .document-swot-matrix,
+  .document-roadmap,
+  .document-roadmap-item,
+  .document-finance-bar,
+  .document-swot-matrix div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .document-finance-dashboard {
+    display: grid;
+    gap: 4mm;
+    margin: 0 0 7mm;
+    padding: 5mm;
+    border: 1px solid #ded3bf;
+    border-radius: 2mm;
+    background: #fffaf1;
+  }
+
+  .document-finance-bar div {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    margin-bottom: 1.5mm;
+    color: var(--print-primary, #171512);
+    font-size: 9pt;
+  }
+
+  .document-finance-bar i {
+    display: block;
+    height: 3mm;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--print-primary, #171512), var(--print-accent, #b08a4a));
+  }
+
+  .document-finance-indicators {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2mm 5mm;
+    margin-top: 2mm;
+  }
+
+  .document-finance-indicators p {
+    margin: 0;
+  }
+
+  .document-swot-matrix {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4mm;
+    margin-bottom: 7mm;
+  }
+
+  .document-swot-matrix div {
+    min-height: 42mm;
+    padding: 5mm;
+    border: 1px solid #ded3bf;
+    border-top: 4px solid var(--print-accent, #b08a4a);
+    border-radius: 2mm;
+    background: rgba(255, 250, 241, 0.94);
+  }
+
+  .document-swot-matrix strong {
+    display: block;
+    margin-bottom: 2mm;
+    color: var(--print-primary, #171512);
+    font-size: 13pt;
+  }
+
+  .document-swot-matrix p {
+    margin: 0;
+  }
+
+  .document-roadmap {
+    display: grid;
+    gap: 4mm;
+    margin-bottom: 7mm;
+  }
+
+  .document-roadmap-item {
+    position: relative;
+    padding: 4mm 5mm 4mm 11mm;
+    border: 1px solid #ded3bf;
+    border-radius: 2mm;
+    background: #fffaf1;
+  }
+
+  .document-roadmap-item::before {
+    content: "";
+    position: absolute;
+    left: 4mm;
+    top: 5mm;
+    width: 3mm;
+    height: 3mm;
+    border-radius: 50%;
+    background: var(--print-accent, #b08a4a);
+    box-shadow: 0 0 0 2mm color-mix(in srgb, var(--print-accent, #b08a4a) 16%, white);
+  }
+
+  .document-roadmap-item span {
+    display: block;
+    color: var(--print-accent, #b08a4a);
+    font-size: 8.5pt;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .document-roadmap-item strong {
+    display: block;
+    margin: 1mm 0;
+    color: var(--print-primary, #171512);
+    font-size: 12pt;
+  }
+
+  .document-roadmap-item p {
+    margin: 0;
+    color: #52605c;
+  }
+
+  .document-image-page {
+    break-before: page;
+    page-break-before: always;
+    break-after: page;
+    page-break-after: always;
+    overflow: hidden;
+  }
+
+  .document-image-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 230mm;
+  }
+
+  .document-image-frame {
+    margin: 0;
+    width: 174mm;
+    min-height: 220mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4mm;
+    border: 1px solid #d8c9ad;
+    border-radius: 2mm;
+    background: #fffaf1;
+    padding: 4mm;
+  }
+
+  .document-image-frame img {
+    width: 100%;
+    max-width: 100%;
+    max-height: 210mm;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .document-image-caption {
+    margin: 4mm 0 0;
+    color: #625846;
+    font-size: 9pt;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .document-closing {
+    background:
+      linear-gradient(135deg, rgba(23, 21, 18, 0.94), rgba(23, 21, 18, 0.86)),
+      url("../img/koru-company.jpg") center / cover no-repeat;
+    color: #fff7e8;
+    overflow: hidden;
+  }
+
+  .document-closing .document-body {
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24mm;
+    overflow: hidden;
+  }
+
+  .document-closing .document-body::after {
+    content: "KORU";
+    position: absolute;
+    right: -12mm;
+    bottom: 8mm;
+    color: var(--print-accent, #b08a4a);
+    font-size: 64pt;
+    font-weight: 900;
+    opacity: 0.08;
+  }
+
+  .document-closing img {
+    width: 42mm;
+    max-height: 22mm;
+    object-fit: contain;
+    margin-bottom: 16mm;
+  }
+
+  .document-closing p {
+    margin: 0 0 4mm;
+    color: var(--print-accent, #b08a4a);
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .document-closing h2 {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 34pt;
+    line-height: 1;
+  }
+
+  .document-closing strong {
+    display: block;
+    margin-top: 7mm;
+    font-size: 15pt;
+    color: #f2dfba;
+  }
+
+  .document-closing div {
+    display: grid;
+    gap: 2mm;
+    margin-top: 18mm;
+    color: #d8c18a;
+    font-size: 10pt;
+  }
+}

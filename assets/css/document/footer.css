@@ -1,0 +1,17 @@
+.puppeteer-pdf-mode .document-footer {
+  display: none !important;
+}
+
+.document-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 4mm;
+}
+
+.document-footer span:nth-child(2) {
+  text-align: center;
+}
+
+.document-footer span:last-child {
+  text-align: right;
+}

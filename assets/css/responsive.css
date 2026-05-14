@@ -1,0 +1,73 @@
+@media (max-width: 1060px) {
+  .header-inner {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px 0;
+  }
+
+  .top-nav {
+    order: 3;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .step-panel {
+    position: relative;
+    top: 0;
+    max-height: none;
+  }
+
+  .step-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .finance-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .status-band,
+  .field-grid,
+  .field-grid.three,
+  .finance-results,
+  .attachments-grid,
+  .step-list {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    min-height: 720px;
+  }
+
+  .hero-content {
+    padding-bottom: 92px;
+  }
+
+  .form-toolbar,
+  .section-head,
+  .finance-intro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar-actions,
+  .header-actions,
+  .hero-actions,
+  .bottom-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  button,
+  .button,
+  .file-button {
+    width: 100%;
+  }
+
+  .form-step {
+    padding: 18px;
+  }
+}
