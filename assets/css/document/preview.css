@@ -98,7 +98,7 @@
 .document-preview-active .document-closing {
   background:
     linear-gradient(135deg, rgba(23, 21, 18, 0.96), rgba(23, 21, 18, 0.88)),
-    url("../img/koru-company.jpg") center / cover no-repeat;
+    url("../../img/koru-company.jpg") center / cover no-repeat;
   color: #f9f1df;
   overflow: hidden;
 }

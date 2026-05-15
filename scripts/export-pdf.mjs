@@ -1,39 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { PDFDocument } from "pdf-lib";
 import puppeteer from "puppeteer";
 
-const COMPANY_SITE_URL = "https://korucompany.com.br";
-const PDF_FOOTER_TEMPLATE = `
-  <style>
-    .pnkc-footer {
-      width: 100%;
-      margin: 0 12mm;
-      padding-top: 4px;
-      border-top: 1px solid #d8c9ad;
-      color: #5f5649;
-      font-family: Arial, sans-serif;
-      font-size: 8px;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .pnkc-footer span:nth-child(2) {
-      text-align: center;
-    }
-
-    .pnkc-footer span:last-child {
-      text-align: right;
-    }
-  </style>
-  <div class="pnkc-footer">
-    <span>Koru Company &mdash; Plano de Neg&oacute;cios</span>
-    <span>${COMPANY_SITE_URL}</span>
-    <span>Documento gerado pelo PNKC &middot; P&aacute;gina <span class="pageNumber"></span> de <span class="totalPages"></span></span>
-  </div>
-`;
+const A4_WIDTH_PT = 595.28;
+const A4_HEIGHT_PT = 841.89;
 
 const args = {};
 const cli = process.argv.slice(2);
@@ -52,7 +24,8 @@ const dataPath = args.data ? resolve(String(args.data)) : null;
 const debug = Boolean(args.debug);
 const indexPath = resolve("index.html");
 const projectBaseUrl = `${pathToFileURL(resolve(".")).href}/`;
-const stylesheetUrl = pathToFileURL(resolve("assets/css/styles.css")).href;
+const stylesheetPath = resolve("assets/css/styles.css");
+const stylesheetCss = readCssBundle(stylesheetPath).replaceAll("</style", "<\\/style");
 const browserExecutablePath = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
@@ -162,7 +135,7 @@ try {
     throw new Error("Relatorio vazio: #printReport nao contem paginas document-page preenchidas.");
   }
 
-  const isolatedPrintHtml = await page.evaluate(() => {
+  const isolatedPrintHtml = inlineLocalImageSources(await page.evaluate(() => {
     const report = document.querySelector("#printReport");
 
     if (!report) {
@@ -174,7 +147,7 @@ try {
     }
 
     return report.outerHTML;
-  });
+  }));
 
   const isolatedDocumentHtml = `<!doctype html>
 <html lang="pt-BR">
@@ -183,14 +156,41 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <base href="${projectBaseUrl}">
   <title>PNKC Print Report</title>
-  <link rel="stylesheet" href="${stylesheetUrl}">
+  <style>${stylesheetCss}</style>
 </head>
 <body class="document-preview-active puppeteer-pdf-mode">
   ${isolatedPrintHtml}
+  <style>
+    body {
+      margin: 0;
+      background: #f7f3ea;
+    }
+
+    body.screenshot-pdf-mode .print-report {
+      width: 210mm;
+      margin: 0;
+      padding: 0;
+      background: #f7f3ea;
+    }
+
+    body.screenshot-pdf-mode .document-page {
+      width: 210mm;
+      min-height: 297mm;
+      max-width: none;
+      margin: 0;
+      box-shadow: none;
+      transform: none;
+    }
+  </style>
 </body>
 </html>`;
 
   const printPage = await browser.newPage();
+  await printPage.setViewport({
+    width: 794,
+    height: 1123,
+    deviceScaleFactor: Number(args.scale || 2)
+  });
   printPage.on("console", async (msg) => {
     if (!debug && !msg.text().includes("PNKC")) return;
     const values = await Promise.all(msg.args().map(async (arg) => {
@@ -212,6 +212,9 @@ try {
   });
 
   await printPage.setContent(isolatedDocumentHtml, { waitUntil: "networkidle0" });
+  await printPage.evaluate(() => {
+    document.body.classList.add("screenshot-pdf-mode");
+  });
   await printPage.waitForSelector("#printReport .document-page", { timeout: 30000 });
 
   await page.evaluate(async () => {
@@ -236,7 +239,7 @@ try {
     }));
   });
 
-  await printPage.emulateMediaType("print");
+  await printPage.emulateMediaType("screen");
 
   const styleDiagnostics = await printPage.evaluate(() => {
     const report = document.querySelector("#printReport");
@@ -294,23 +297,102 @@ try {
     console.log("[PNKC PDF DEBUG] debug artifacts", { debugHtmlPath, debugScreenshotPath });
   }
 
-  await printPage.pdf({
-    path: outPath,
-    format: "A4",
-    printBackground: true,
-    displayHeaderFooter: true,
-    headerTemplate: "<div></div>",
-    footerTemplate: PDF_FOOTER_TEMPLATE,
-    preferCSSPageSize: true,
-    margin: {
-      top: "0",
-      right: "0",
-      bottom: "12mm",
-      left: "0"
-    }
+  const pageScreenshots = await captureReportPageScreenshots(printPage);
+  if (!pageScreenshots.length) {
+    throw new Error("Nenhuma pagina visual foi capturada para montar o PDF.");
+  }
+
+  const pdfDocument = await PDFDocument.create();
+  for (const screenshot of pageScreenshots) {
+    const image = await pdfDocument.embedPng(screenshot);
+    const pdfPage = pdfDocument.addPage([A4_WIDTH_PT, A4_HEIGHT_PT]);
+    pdfPage.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: A4_WIDTH_PT,
+      height: A4_HEIGHT_PT
+    });
+  }
+
+  const pdfBytes = await pdfDocument.save();
+  writeFileSync(outPath, pdfBytes);
+
+  console.log("[PNKC PDF DEBUG] screenshot PDF", {
+    pageCount: pageScreenshots.length,
+    outputBytes: pdfBytes.length
   });
 
   console.log(`PDF gerado em: ${outPath}`);
 } finally {
   await browser.close();
+}
+
+async function captureReportPageScreenshots(page) {
+  const pageCount = await page.evaluate(() => document.querySelectorAll("#printReport .document-page").length);
+  const screenshots = [];
+
+  for (let index = 0; index < pageCount; index += 1) {
+    const element = await page.$(`#printReport .document-page:nth-of-type(${index + 1})`);
+    if (!element) {
+      throw new Error(`Pagina visual ${index + 1} nao encontrada para screenshot.`);
+    }
+
+    await element.evaluate((node) => node.scrollIntoView({ block: "start", inline: "nearest" }));
+    screenshots.push(await element.screenshot({
+      type: "png",
+      omitBackground: false
+    }));
+  }
+
+  return screenshots;
+}
+
+function readCssBundle(filePath, seen = new Set()) {
+  const resolvedPath = resolve(filePath);
+  if (seen.has(resolvedPath)) return "";
+  seen.add(resolvedPath);
+
+  const css = readFileSync(resolvedPath, "utf8");
+  const cssDirectory = dirname(resolvedPath);
+  return css
+    .replace(/@import\s+url\(["']?(.+?)["']?\);/g, (_match, importPath) => {
+      return readCssBundle(resolve(cssDirectory, importPath), seen);
+    })
+    .replace(/url\(["']?(.+?)["']?\)/g, (match, assetPath) => {
+      if (/^(data:|https?:|file:|#)/i.test(assetPath)) return match;
+      const dataUrl = fileToDataUrl(resolve(cssDirectory, assetPath));
+      return dataUrl ? `url("${dataUrl}")` : match;
+    });
+}
+
+function inlineLocalImageSources(html) {
+  return html.replace(/\ssrc=(["'])(.+?)\1/g, (match, quote, source) => {
+    if (/^(data:|https?:|blob:)/i.test(source)) return match;
+
+    const sourcePath = source.startsWith("file:")
+      ? new URL(source)
+      : resolve(source.replace(/^\/+/, ""));
+    const resolvedPath = sourcePath instanceof URL ? sourcePath : resolve(sourcePath);
+    if (!existsSync(resolvedPath)) return match;
+
+    const dataUrl = fileToDataUrl(resolvedPath);
+    return dataUrl ? ` src=${quote}${dataUrl}${quote}` : match;
+  });
+}
+
+function fileToDataUrl(filePath) {
+  if (!existsSync(filePath)) return "";
+
+  const extension = String(filePath).split(".").pop()?.toLowerCase();
+  const mimeType = extension === "svg"
+    ? "image/svg+xml"
+    : extension === "png"
+      ? "image/png"
+      : extension === "webp"
+        ? "image/webp"
+        : extension === "gif"
+          ? "image/gif"
+          : "image/jpeg";
+  const data = readFileSync(filePath).toString("base64");
+  return `data:${mimeType};base64,${data}`;
 }

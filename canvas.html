@@ -1,1 +1,121 @@
-<!--página de craição de canvas-->
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Canvas visual do PNKC para organizar ideias de modelo de negocio em notinhas."
+    />
+    <title>Canvas - Plano de Negocios Koru Company</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/canvas.css" />
+  </head>
+  <body class="canvas-page">
+    <a class="skip-link" href="#canvasWorkspace">Ir para o Canvas</a>
+
+    <header class="site-header" id="top">
+      <div class="header-inner">
+        <a
+          class="brand"
+          href="index.html#home"
+          aria-label="Plano de Negocios - Koru Company - inicio"
+        >
+          <span class="brand-mark" aria-hidden="true">P</span>
+          <span>
+            <strong>Koru Company</strong>
+            <small>Business Model Canvas</small>
+          </span>
+        </a>
+        <nav class="top-nav" aria-label="Navegacao principal">
+          <a href="index.html#home">Inicio</a>
+          <a href="index.html#workspace">Formulario</a>
+          <a href="index.html#financeiro">Financeiro</a>
+          <a href="canvas.html" aria-current="page">Canvas</a>
+        </nav>
+        <div class="header-actions" aria-label="Acoes do Canvas">
+          <a class="button ghost" href="index.html">Plano completo</a>
+          <button class="button primary" type="button" id="focusCanvasFormButton">
+            Nova notinha
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="canvas-shell">
+      <section class="canvas-intro" aria-labelledby="canvasPageTitle">
+        <p class="eyebrow">Business Model Canvas</p>
+        <h1 id="canvasPageTitle">
+          Monte o modelo de negocio em notinhas visuais.
+        </h1>
+        <p>
+          Preencha os blocos do Canvas e veja suas ideias organizadas
+          automaticamente no quadro.
+        </p>
+      </section>
+
+      <section
+        class="canvas-workspace"
+        id="canvasWorkspace"
+        aria-label="Editor visual do Business Model Canvas"
+      >
+        <aside class="canvas-form-panel" aria-labelledby="canvasFormTitle">
+          <div class="canvas-form-header">
+            <div>
+              <p class="eyebrow">Preenchimento</p>
+              <h2 id="canvasFormTitle">Blocos do Canvas</h2>
+            </div>
+            <p id="canvasSavedStatus">Nada salvo ainda.</p>
+          </div>
+          <form id="canvasForm" class="canvas-form"></form>
+        </aside>
+
+        <section class="canvas-board-panel" aria-labelledby="canvasBoardTitle">
+          <div class="canvas-board-toolbar">
+            <div>
+              <p class="eyebrow">Quadro visual</p>
+              <h2 id="canvasBoardTitle">Business Model Canvas</h2>
+              <p>Clique em uma secao para ampliar as notinhas.</p>
+            </div>
+            <button type="button" class="button ghost" id="clearCanvasButton">
+              Limpar Canvas
+            </button>
+          </div>
+          <div id="canvasBoard" class="canvas-board"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="canvasModalBackdrop" class="canvas-modal-backdrop" hidden>
+      <section
+        class="canvas-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="canvasModalTitle"
+      >
+        <button
+          type="button"
+          class="canvas-modal-close"
+          id="canvasModalClose"
+          aria-label="Fechar detalhes do Canvas"
+        >
+          Fechar
+        </button>
+        <p class="eyebrow" id="canvasModalEyebrow">Secao do Canvas</p>
+        <h2 id="canvasModalTitle"></h2>
+        <p id="canvasModalDescription"></p>
+        <div id="canvasModalNotes" class="canvas-modal-notes"></div>
+        <button
+          type="button"
+          class="button primary"
+          id="canvasModalAddButton"
+        >
+          Adicionar nova notinha nesta secao
+        </button>
+      </section>
+    </div>
+
+    <script src="assets/js/canvas.js" defer></script>
+  </body>
+</html>

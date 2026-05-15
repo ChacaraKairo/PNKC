@@ -1,0 +1,450 @@
+.canvas-page {
+  min-height: 100vh;
+}
+
+.canvas-page .top-nav a[aria-current="page"] {
+  color: var(--primary);
+}
+
+.canvas-shell {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 38px 0 64px;
+}
+
+.canvas-intro {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.canvas-intro h1,
+.canvas-intro p {
+  margin: 0;
+}
+
+.canvas-intro h1 {
+  max-width: 840px;
+  color: var(--primary-strong);
+  font-size: clamp(2rem, 4vw, 4.2rem);
+  line-height: 1;
+}
+
+.canvas-intro p:not(.eyebrow) {
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.canvas-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.canvas-form-panel,
+.canvas-board-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.canvas-form-panel {
+  position: sticky;
+  top: 92px;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.canvas-form-header,
+.canvas-board-toolbar,
+.canvas-cell-head,
+.canvas-form-note-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.canvas-form-header {
+  position: sticky;
+  top: -18px;
+  z-index: 2;
+  margin: -18px -18px 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.canvas-form-header h2,
+.canvas-board-toolbar h2,
+.canvas-cell h3,
+.canvas-form-section h3,
+.canvas-modal h2 {
+  margin: 0;
+}
+
+#canvasSavedStatus {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 760;
+  text-align: right;
+}
+
+.canvas-form {
+  display: grid;
+  gap: 14px;
+}
+
+.canvas-form-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: #fbfdfb;
+}
+
+.canvas-form-section p {
+  margin: 6px 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.canvas-note-input {
+  width: 100%;
+  min-height: 96px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 12px;
+  resize: vertical;
+}
+
+.canvas-note-input:focus {
+  border-color: var(--primary);
+}
+
+.canvas-form-note-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.canvas-form-note-item {
+  align-items: center;
+  border: 1px solid #e4dcc1;
+  border-radius: var(--radius);
+  background: #fffbea;
+  padding: 8px;
+}
+
+.canvas-form-note-item span {
+  min-width: 0;
+  color: #3b3421;
+  font-size: 0.86rem;
+}
+
+.canvas-form-note-item .button {
+  min-height: 34px;
+  padding: 7px 9px;
+  font-size: 0.78rem;
+}
+
+.canvas-empty-inline {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.canvas-board-panel {
+  min-width: 0;
+  padding: 18px;
+}
+
+.canvas-board-toolbar {
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.canvas-board-toolbar p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.canvas-board {
+  min-height: 720px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  grid-template-rows: 1fr 1fr 0.75fr;
+  grid-template-areas:
+    "parcerias atividades proposta relacionamento segmentos"
+    "parcerias recursos proposta canais segmentos"
+    "custos custos custos receitas receitas";
+  gap: 10px;
+}
+
+.canvas-cell {
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fffdf7;
+  padding: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.canvas-cell:hover,
+.canvas-cell:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 14px 34px rgba(18, 52, 59, 0.14);
+}
+
+.canvas-cell[data-section-id="parceriasChave"] {
+  grid-area: parcerias;
+}
+
+.canvas-cell[data-section-id="atividadesChave"] {
+  grid-area: atividades;
+}
+
+.canvas-cell[data-section-id="recursosChave"] {
+  grid-area: recursos;
+}
+
+.canvas-cell[data-section-id="propostaValor"] {
+  grid-area: proposta;
+  background: #f8fff9;
+}
+
+.canvas-cell[data-section-id="relacionamentoClientes"] {
+  grid-area: relacionamento;
+}
+
+.canvas-cell[data-section-id="canais"] {
+  grid-area: canais;
+}
+
+.canvas-cell[data-section-id="segmentosClientes"] {
+  grid-area: segmentos;
+}
+
+.canvas-cell[data-section-id="estruturaCustos"] {
+  grid-area: custos;
+}
+
+.canvas-cell[data-section-id="fontesReceita"] {
+  grid-area: receitas;
+}
+
+.canvas-cell-head h3 {
+  color: var(--primary-strong);
+  font-size: 0.98rem;
+  line-height: 1.15;
+}
+
+.canvas-cell-head span {
+  flex: 0 0 auto;
+  min-width: 30px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--primary);
+  padding: 4px 8px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.canvas-cell-description {
+  margin: 8px 0 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.canvas-cell-notes {
+  display: grid;
+  gap: 8px;
+}
+
+.canvas-note {
+  margin-top: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 7px;
+  background: #fff4a8;
+  color: #2d2614;
+  padding: 8px;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  transform: rotate(-1deg);
+  overflow-wrap: anywhere;
+}
+
+.canvas-note:nth-child(2n) {
+  transform: rotate(1deg);
+}
+
+.canvas-note:nth-child(3n) {
+  transform: rotate(-0.5deg);
+}
+
+.canvas-note-large {
+  margin: 0;
+  min-height: 88px;
+  padding: 14px;
+  font-size: 1rem;
+  white-space: pre-wrap;
+}
+
+.canvas-more-notes,
+.canvas-empty-cell,
+.canvas-empty-state {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 760;
+}
+
+.canvas-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 21, 0.56);
+}
+
+.canvas-modal-backdrop[hidden] {
+  display: none;
+}
+
+.canvas-modal {
+  position: relative;
+  width: min(980px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: auto;
+  border: 1px solid #eadfbf;
+  border-radius: 14px;
+  background: #fffdf7;
+  padding: 24px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.28);
+}
+
+.canvas-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.canvas-modal > p:not(.eyebrow) {
+  max-width: 760px;
+  margin: 8px 0 18px;
+  color: var(--muted);
+}
+
+.canvas-modal-notes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.canvas-modal-open {
+  overflow: hidden;
+}
+
+@media (max-width: 1180px) {
+  .canvas-board {
+    min-height: 820px;
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    grid-template-rows: repeat(4, minmax(170px, auto));
+    grid-template-areas:
+      "proposta segmentos relacionamento"
+      "proposta canais receitas"
+      "atividades recursos receitas"
+      "parcerias custos custos";
+  }
+
+  .canvas-modal-notes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .canvas-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-form-panel {
+    position: static;
+    max-height: none;
+  }
+
+  .canvas-board {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas:
+      "segmentos"
+      "proposta"
+      "canais"
+      "relacionamento"
+      "receitas"
+      "recursos"
+      "atividades"
+      "parcerias"
+      "custos";
+  }
+
+  .canvas-cell {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 720px) {
+  .canvas-shell {
+    width: min(100% - 24px, 1440px);
+    padding-top: 24px;
+  }
+
+  .canvas-intro h1 {
+    font-size: 2.15rem;
+  }
+
+  .canvas-board-toolbar,
+  .canvas-form-header,
+  .canvas-form-note-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #canvasSavedStatus {
+    text-align: left;
+  }
+
+  .canvas-board-panel,
+  .canvas-form-panel,
+  .canvas-modal {
+    padding: 16px;
+  }
+
+  .canvas-modal {
+    max-height: calc(100vh - 24px);
+  }
+
+  .canvas-modal-close {
+    position: static;
+    margin-bottom: 12px;
+  }
+
+  .canvas-modal-notes {
+    grid-template-columns: 1fr;
+  }
+}
