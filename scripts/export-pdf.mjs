@@ -51,6 +51,8 @@ const outPath = resolve(String(args.out || "dist/plano-pnkc.pdf"));
 const dataPath = args.data ? resolve(String(args.data)) : null;
 const debug = Boolean(args.debug);
 const indexPath = resolve("index.html");
+const projectBaseUrl = `${pathToFileURL(resolve(".")).href}/`;
+const stylesheetUrl = pathToFileURL(resolve("assets/css/styles.css")).href;
 const browserExecutablePath = [
   process.env.PUPPETEER_EXECUTABLE_PATH,
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
@@ -160,6 +162,58 @@ try {
     throw new Error("Relatorio vazio: #printReport nao contem paginas document-page preenchidas.");
   }
 
+  const isolatedPrintHtml = await page.evaluate(() => {
+    const report = document.querySelector("#printReport");
+
+    if (!report) {
+      throw new Error("#printReport nao encontrado para gerar HTML isolado.");
+    }
+
+    if (!report.querySelector(".document-page")) {
+      throw new Error("#printReport nao contem .document-page no HTML isolado.");
+    }
+
+    return report.outerHTML;
+  });
+
+  const isolatedDocumentHtml = `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="${projectBaseUrl}">
+  <title>PNKC Print Report</title>
+  <link rel="stylesheet" href="${stylesheetUrl}">
+</head>
+<body class="document-preview-active puppeteer-pdf-mode">
+  ${isolatedPrintHtml}
+</body>
+</html>`;
+
+  const printPage = await browser.newPage();
+  printPage.on("console", async (msg) => {
+    if (!debug && !msg.text().includes("PNKC")) return;
+    const values = await Promise.all(msg.args().map(async (arg) => {
+      try {
+        return await arg.jsonValue();
+      } catch {
+        return String(arg);
+      }
+    }));
+    console.log(`[PRINT:${msg.type()}] ${msg.text()}`, values);
+  });
+
+  printPage.on("pageerror", (error) => {
+    console.error("[PRINT:pageerror]", error);
+  });
+
+  printPage.on("requestfailed", (request) => {
+    console.warn("[PRINT:requestfailed]", request.url(), request.failure()?.errorText);
+  });
+
+  await printPage.setContent(isolatedDocumentHtml, { waitUntil: "networkidle0" });
+  await printPage.waitForSelector("#printReport .document-page", { timeout: 30000 });
+
   await page.evaluate(async () => {
     const images = Array.from(document.querySelectorAll("#printReport img"));
     await Promise.all(images.map((img) => {
@@ -171,14 +225,29 @@ try {
     }));
   });
 
-  await page.emulateMediaType("print");
+  await printPage.evaluate(async () => {
+    const images = Array.from(document.querySelectorAll("#printReport img"));
+    await Promise.all(images.map((img) => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+  });
 
-  const styleDiagnostics = await page.evaluate(() => {
+  await printPage.emulateMediaType("print");
+
+  const styleDiagnostics = await printPage.evaluate(() => {
     const report = document.querySelector("#printReport");
     const firstPage = document.querySelector("#printReport .document-page");
+    const firstBody = document.querySelector("#printReport .document-body");
     const firstSection = document.querySelector("#printReport .document-section");
     const financialSection = Array.from(document.querySelectorAll("#printReport .document-section"))
       .find((section) => section.textContent.includes("Plano financeiro"));
+    const visibleContentBlocks = document.querySelectorAll(
+      "#printReport .document-field, #printReport .document-finance-dashboard, #printReport .document-swot-matrix, #printReport .document-roadmap, #printReport .document-table, #printReport .document-summary li, #printReport .document-cover h1, #printReport .document-closing h2, #printReport .document-image-frame img"
+    ).length;
 
     return {
       reportDisplay: report ? getComputedStyle(report).display : null,
@@ -186,9 +255,14 @@ try {
       reportHeight: report ? report.getBoundingClientRect().height : null,
       firstPageDisplay: firstPage ? getComputedStyle(firstPage).display : null,
       firstPageHeight: firstPage ? firstPage.getBoundingClientRect().height : null,
+      firstBodyDisplay: firstBody ? getComputedStyle(firstBody).display : null,
+      firstBodyVisibility: firstBody ? getComputedStyle(firstBody).visibility : null,
+      firstBodyHeight: firstBody ? firstBody.getBoundingClientRect().height : null,
+      firstBodyTextLength: firstBody ? firstBody.textContent.trim().length : 0,
       firstSectionDisplay: firstSection ? getComputedStyle(firstSection).display : null,
       firstSectionHeight: firstSection ? firstSection.getBoundingClientRect().height : null,
       firstSectionTextLength: firstSection ? firstSection.textContent.trim().length : 0,
+      visibleContentBlocks,
       financialSectionExists: Boolean(financialSection),
       financialSectionDisplay: financialSection ? getComputedStyle(financialSection).display : null,
       financialSectionHeight: financialSection ? financialSection.getBoundingClientRect().height : null,
@@ -198,19 +272,29 @@ try {
   });
   console.log("[PNKC PDF DEBUG] styleDiagnostics", styleDiagnostics);
 
+  if (
+    styleDiagnostics.reportDisplay === "none" ||
+    styleDiagnostics.reportVisibility === "hidden" ||
+    !styleDiagnostics.reportHeight ||
+    styleDiagnostics.firstPageDisplay === "none" ||
+    !styleDiagnostics.firstPageHeight ||
+    styleDiagnostics.firstBodyDisplay === "none" ||
+    styleDiagnostics.firstBodyVisibility === "hidden" ||
+    !styleDiagnostics.firstBodyHeight ||
+    !styleDiagnostics.visibleContentBlocks
+  ) {
+    throw new Error("HTML isolado do relatorio nao tem miolo visivel para impressao.");
+  }
+
   if (debug) {
     const debugHtmlPath = resolve(dirname(outPath), "debug-print-report.html");
     const debugScreenshotPath = resolve(dirname(outPath), "debug-print-report.png");
-    const reportHtml = await page.evaluate(() => {
-      const report = document.querySelector("#printReport");
-      return `<!doctype html><html><head><meta charset="utf-8"><title>PNKC Debug Print Report</title><link rel="stylesheet" href="../assets/css/styles.css"></head><body class="document-preview-active puppeteer-pdf-mode">${report?.outerHTML || ""}</body></html>`;
-    });
-    writeFileSync(debugHtmlPath, reportHtml, "utf8");
-    await page.screenshot({ path: debugScreenshotPath, fullPage: true });
+    writeFileSync(debugHtmlPath, isolatedDocumentHtml, "utf8");
+    await printPage.screenshot({ path: debugScreenshotPath, fullPage: true });
     console.log("[PNKC PDF DEBUG] debug artifacts", { debugHtmlPath, debugScreenshotPath });
   }
 
-  await page.pdf({
+  await printPage.pdf({
     path: outPath,
     format: "A4",
     printBackground: true,

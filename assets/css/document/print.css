@@ -18,7 +18,7 @@
   }
 
   .site-header,
-  main,
+  body > main,
   .skip-link {
     display: none !important;
   }
@@ -656,5 +656,11 @@
 
   body.puppeteer-pdf-mode #printReport .document-page {
     display: flex !important;
+  }
+
+  body.puppeteer-pdf-mode #printReport .document-body,
+  body.document-preview-active #printReport .document-body {
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }

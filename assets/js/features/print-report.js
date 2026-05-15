@@ -24,12 +24,32 @@ async function buildPrintReport(data = state) {
   });
   report.innerHTML = html;
 
-  const pages = report.querySelectorAll(".document-page");
-  const hasVisibleContent = report.textContent.trim().length > 0 || report.querySelectorAll("img").length > 0;
+  const contentPages = Array.from(report.querySelectorAll(".document-page"));
+  const contentBodies = Array.from(report.querySelectorAll(".document-body"));
+  const bodyTextLength = contentBodies
+    .map((body) => body.textContent.trim())
+    .join("")
+    .length;
+  const visibleContentBlocks = report.querySelectorAll(
+    ".document-field, .document-finance-dashboard, .document-swot-matrix, .document-roadmap, .document-table, .document-summary li, .document-cover h1, .document-closing h2, .document-image-frame img"
+  ).length;
+
+  pdfDebugLog("buildPrintReport:content-validation", {
+    pageCount: contentPages.length,
+    bodyTextLength,
+    visibleContentBlocks,
+    pageBodies: contentBodies.map((body, index) => ({
+      index,
+      textLength: body.textContent.trim().length,
+      htmlLength: body.innerHTML.trim().length,
+      firstText: body.textContent.trim().slice(0, 120)
+    }))
+  });
+
   pdfDebugLog("buildPrintReport:dom-inserted", inspectPrintReport(report));
-  if (!pages.length || !hasVisibleContent) {
+  if (!contentPages.length || !contentBodies.length || (!bodyTextLength && !visibleContentBlocks)) {
     report.dataset.ready = "false";
-    throw new Error("Relatorio de impressao vazio. Nenhuma pagina document-* foi gerada.");
+    throw new Error("Relatorio de impressao vazio. Nenhum conteudo real foi gerado em .document-body.");
   }
 
   await waitForReportImages(report);
