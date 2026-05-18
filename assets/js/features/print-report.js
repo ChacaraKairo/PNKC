@@ -1,3 +1,17 @@
+const DOCUMENT_CANVAS_STORAGE_KEY = "pnkc_canvas_v1";
+const DOCUMENT_CANVAS_NOTE_MAX_LENGTH = 280;
+const REPORT_CANVAS_SECTIONS = [
+  ["parceriasChave", "Parcerias-Chave"],
+  ["atividadesChave", "Atividades-Chave"],
+  ["recursosChave", "Recursos-Chave"],
+  ["propostaValor", "Proposta de Valor"],
+  ["relacionamentoClientes", "Relacionamento"],
+  ["canais", "Canais"],
+  ["segmentosClientes", "Segmentos de Clientes"],
+  ["estruturaCustos", "Estrutura de Custos"],
+  ["fontesReceita", "Fontes de Receita"]
+];
+
 async function buildPrintReport(data = state) {
   const report = document.getElementById("printReport");
   if (!report) throw new Error("Elemento #printReport nao encontrado.");
@@ -31,7 +45,7 @@ async function buildPrintReport(data = state) {
     .join("")
     .length;
   const visibleContentBlocks = report.querySelectorAll(
-    ".document-field, .document-finance-dashboard, .document-swot-matrix, .document-roadmap, .document-table, .document-summary li, .document-cover h1, .document-closing h2, .document-image-frame img"
+    ".document-field, .document-finance-dashboard, .document-swot-matrix, .document-roadmap, .document-table, .document-summary li, .document-cover h1, .document-closing h2, .document-image-frame img, .document-canvas-board"
   ).length;
 
   pdfDebugLog("buildPrintReport:content-validation", {
@@ -139,6 +153,7 @@ function createBusinessPlanDocumentHtml(data = state) {
     ${renderDocumentSummary(printableSections)}
     ${printableSections.map((section, index) => renderDocumentSection(section, index)).join("")}
     ${renderDocumentImagePages()}
+    ${renderCanvasReportPage()}
     ${renderDocumentClosing(company, generatedAt)}
   `;
   pdfDebugLog("createBusinessPlanDocumentHtml:html", {
@@ -163,7 +178,7 @@ function renderDocumentPage(content, options = {}) {
   const bodyClass = options.bodyClass || "";
 
   return `
-    <section class="document-page ${pageClass}${hideChrome}">
+    <section class="document-page pdf-page ${pageClass}${hideChrome}">
       <div class="document-watermark" aria-hidden="true"><img src="${KORU_LOGO_SRC}" alt=""></div>
       ${options.hideChrome ? "" : `
         <header class="document-header">
@@ -207,9 +222,9 @@ function renderDocumentSummary(printableSections) {
 
 function renderDocumentSection(section, index) {
   const fields = (section.fields || []).filter((field) => shouldPrintField(section, field));
-  const tables = (section.tables || []).filter((table) => (state.tables[table.id] || []).some((row) => row.some(isFilled)));
-  const specialContent = renderSpecialPrintContent(section);
-  if (!fields.length && !tables.length && !specialContent) {
+  const tables = (section.tables || []).filter((table) => shouldPrintTable(section, table));
+  const specialBlocks = renderSpecialPrintBlocks(section);
+  if (!fields.length && !tables.length && !specialBlocks.length) {
     pdfDebugLog("renderDocumentSection", {
       sectionId: section.id,
       title: section.title,
@@ -224,17 +239,14 @@ function renderDocumentSection(section, index) {
     return "";
   }
 
-  const sectionHtml = renderDocumentPage(`
-    <article class="document-section">
-      <div class="document-section-title">
-        <span>${String(index + 1).padStart(2, "0")}</span>
-        <h2>${section.title}</h2>
-      </div>
-      ${fields.map((field) => `<p class="document-field"><strong>${field.label}</strong>${formatDocumentValue(field, state.fields[field.name])}</p>`).join("")}
-      ${specialContent}
-      ${tables.map(renderDocumentTable).join("")}
-    </article>
-  `, { pageClass: "document-content-page" });
+  const fieldBlocks = fields.flatMap(renderDocumentFieldBlocks);
+  const contentBlocks = [
+    ...specialBlocks,
+    ...fieldBlocks,
+    ...tables.flatMap(renderDocumentTableBlocks)
+  ];
+  const chunks = chunkDocumentSectionBlocks(contentBlocks);
+  const sectionHtml = chunks.map((chunk, chunkIndex) => renderDocumentSectionPage(section, index, chunk.map((block) => block.html).join(""), chunkIndex, chunks.length)).join("");
   pdfDebugLog("renderDocumentSection", {
     sectionId: section.id,
     title: section.title,
@@ -247,6 +259,138 @@ function renderDocumentSection(section, index) {
     isFinancial: section.id === "financeiro"
   });
   return sectionHtml;
+}
+
+function renderDocumentSectionPage(section, index, content, chunkIndex = 0, chunkCount = 1) {
+  const continuation = chunkCount > 1 ? `<small>Parte ${chunkIndex + 1} de ${chunkCount}</small>` : "";
+
+  return renderDocumentPage(`
+    <article class="document-section">
+      <div class="document-section-title">
+        <span>${String(index + 1).padStart(2, "0")}</span>
+        <h2>${section.title}</h2>
+        ${continuation}
+      </div>
+      ${content}
+    </article>
+  `, { pageClass: "document-content-page" });
+}
+
+function chunkDocumentSectionBlocks(blocks) {
+  const chunks = [];
+  let current = [];
+  let currentUnits = 0;
+  const maxUnits = 2800;
+
+  blocks.forEach((block) => {
+    const units = block.units || estimatePrintUnits(block.html);
+    const shouldStartNewChunk = current.length && (
+      block.forceAlone ||
+      currentUnits + units > maxUnits ||
+      (block.isTable && currentUnits > 1300)
+    );
+
+    if (shouldStartNewChunk) {
+      chunks.push(current);
+      current = [];
+      currentUnits = 0;
+    }
+
+    current.push(block);
+    currentUnits += units;
+
+    if (block.forceAlone || units >= maxUnits) {
+      chunks.push(current);
+      current = [];
+      currentUnits = 0;
+    }
+  });
+
+  if (current.length) chunks.push(current);
+  return chunks.length ? chunks : [[]];
+}
+
+function renderDocumentFieldBlocks(field) {
+  const rawValue = normalizeFieldValueByLimit(field.name, state.fields[field.name]);
+  const chunks = splitTextForPrint(rawValue, field.kind === "textarea" ? 780 : 420);
+
+  return chunks.map((chunk, index) => ({
+    html: `
+      <div class="document-field pdf-card pdf-break-avoid">
+        <strong>${escapeHtml(field.label)}${chunks.length > 1 ? ` <span>parte ${index + 1}/${chunks.length}</span>` : ""}</strong>
+        <p>${formatDocumentValue(field, chunk)}</p>
+      </div>
+    `,
+    units: 260 + chunk.length,
+    forceAlone: chunk.length > 1050
+  }));
+}
+
+function splitTextForPrint(value, maxLength = 780) {
+  const text = String(value || "").trim();
+  if (text.length <= maxLength) return text ? [text] : [];
+
+  const chunks = [];
+  const paragraphs = text.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
+  let current = "";
+
+  paragraphs.forEach((paragraph) => {
+    if (paragraph.length > maxLength) {
+      if (current) {
+        chunks.push(current);
+        current = "";
+      }
+      splitLongParagraph(paragraph, maxLength).forEach((part) => chunks.push(part));
+      return;
+    }
+
+    const next = current ? `${current}\n\n${paragraph}` : paragraph;
+    if (next.length > maxLength && current) {
+      chunks.push(current);
+      current = paragraph;
+    } else {
+      current = next;
+    }
+  });
+
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function splitLongParagraph(paragraph, maxLength) {
+  const sentences = paragraph.match(/[^.!?]+[.!?]+|\S.+$/g) || [paragraph];
+  const chunks = [];
+  let current = "";
+
+  sentences.forEach((sentence) => {
+    const trimmed = sentence.trim();
+    const next = current ? `${current} ${trimmed}` : trimmed;
+
+    if (next.length > maxLength && current) {
+      chunks.push(current);
+      current = trimmed;
+      return;
+    }
+
+    if (trimmed.length > maxLength) {
+      chunks.push(...trimmed.match(new RegExp(`.{1,${maxLength}}(\\s|$)`, "g")).map((part) => part.trim()).filter(Boolean));
+      current = "";
+      return;
+    }
+
+    current = next;
+  });
+
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function estimatePrintUnits(html) {
+  const markup = String(html || "");
+  const text = markup.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const rows = (markup.match(/<tr/g) || []).length;
+  const cards = (markup.match(/document-card-list-item/g) || []).length;
+  return text.length + rows * 180 + cards * 260;
 }
 
 function renderDocumentImagePages() {
@@ -287,17 +431,91 @@ function renderDocumentClosing(company, generatedAt) {
   `, { pageClass: "document-closing", hideChrome: true });
 }
 
+function readCanvasStateForReport() {
+  try {
+    const stored = localStorage.getItem(DOCUMENT_CANVAS_STORAGE_KEY);
+    if (!stored) return null;
+
+    const parsed = JSON.parse(stored);
+    const hasNotes = Object.values(parsed?.sections || {}).some((notes) =>
+      Array.isArray(notes) && notes.some((note) => note?.text?.trim())
+    );
+
+    return hasNotes ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function renderCanvasReportPage() {
+  const canvas = readCanvasStateForReport();
+  if (!canvas) return "";
+
+  const company = getField("nomeEmpresa") || getField("nomeFantasia") || "Plano de Negocios";
+  const companyLogo = state.images.logo || "";
+
+  return renderDocumentPage(`
+    <article class="document-canvas-page-content">
+      <div class="document-canvas-header">
+        <div>
+          <p class="document-kicker">Business Model Canvas</p>
+          <h2>${escapeHtml(company)}</h2>
+          <span>Modelo de negocio visual</span>
+        </div>
+        ${companyLogo ? `<img src="${companyLogo}" alt="Logo da empresa">` : ""}
+      </div>
+
+      <div class="document-canvas-board">
+        ${REPORT_CANVAS_SECTIONS.map(([sectionId, title]) => {
+          const notes = Array.isArray(canvas.sections?.[sectionId])
+            ? canvas.sections[sectionId].filter((note) => note?.text?.trim())
+            : [];
+
+          return `
+            <section class="document-canvas-cell" data-section-id="${sectionId}">
+              <h3>${escapeHtml(title)}</h3>
+              <div>
+                ${notes.length
+                  ? notes.map((note) => `<p class="document-canvas-note">${escapeHtml(limitCanvasReportNoteText(note.text))}</p>`).join("")
+                  : `<p class="document-canvas-empty">Sem notas</p>`
+                }
+              </div>
+            </section>
+          `;
+        }).join("")}
+      </div>
+    </article>
+  `, { pageClass: "document-canvas-page" });
+}
+
+function limitCanvasReportNoteText(value) {
+  return String(value || "").trim().slice(0, DOCUMENT_CANVAS_NOTE_MAX_LENGTH).trim();
+}
+
 function shouldPrintField(section, field) {
   if (field.type || HIDDEN_PRINT_FIELDS.has(field.name) || !isFilled(state.fields[field.name])) return false;
   if (section.id === "swot" && ["forcas", "fraquezas", "oportunidades", "ameacas"].includes(field.name)) return false;
+  if (section.id === "financeiro") return false;
   return true;
 }
 
-function renderSpecialPrintContent(section) {
-  if (section.id === "financeiro") return renderDocumentFinancialDashboard();
-  if (section.id === "swot") return renderDocumentSwotMatrix();
-  if (section.id === "cronograma") return renderDocumentTimelineRoadmap();
-  return "";
+function shouldPrintTable(section, table) {
+  if (section.id === "cronograma" && table.id === "cronogramaTable") return false;
+  return (state.tables[table.id] || []).some((row) => row.some(isFilled));
+}
+
+function renderSpecialPrintBlocks(section) {
+  if (section.id === "financeiro") {
+    return [{
+      html: renderDocumentFinancialDashboard(),
+      units: 1250,
+      forceAlone: false
+    }];
+  }
+
+  if (section.id === "swot") return renderDocumentSwotBlocks();
+  if (section.id === "cronograma") return renderDocumentTimelineBlocks();
+  return [];
 }
 
 function renderDocumentFinancialDashboard() {
@@ -333,6 +551,7 @@ function renderDocumentFinancialDashboard() {
       </div>
       <p><strong>Interpretação:</strong> o plano financeiro compara receitas, custos e investimento inicial. Quando faltarem dados, os indicadores aparecem como não calculáveis para evitar conclusões falsas.</p>
     </div>
+    ${renderDocumentFinancialSummary()}
   `;
   pdfDebugLog("renderFinancialSection", {
     hasFinancialFields: ["investimentoTotal", "receitaBruta", "custosFixos", "custosVariaveis", "lucroLiquido", "capitalGiro"].some((field) => isFilled(state.fields[field])),
@@ -342,6 +561,35 @@ function renderDocumentFinancialDashboard() {
     htmlLength: html.length
   });
   return html;
+}
+
+function renderDocumentFinancialSummary() {
+  const items = [
+    ["Investimento inicial total", "investimentoTotal", "money"],
+    ["Receita prevista mensal", "receitaBruta", "money"],
+    ["Custos fixos mensais", "custosFixos", "money"],
+    ["Custos variáveis mensais", "custosVariaveis", "money"],
+    ["Lucro líquido mensal", "lucroLiquido", "money"],
+    ["Capital de giro necessário", "capitalGiro", "money"],
+    ["Reserva mínima", "reservaMinima", "money"],
+    ["Prazo médio de recebimento", "prazoRecebimento", "days"],
+    ["Prazo médio de pagamento", "prazoPagamento", "days"],
+    ["Estoque inicial", "estoqueInicial", "money"],
+    ["Necessidade estimada de capital de giro", "necessidadeCapitalGiro", "money"]
+  ].filter(([, field]) => isFilled(state.fields[field]));
+
+  if (!items.length) return "";
+
+  return `
+    <div class="document-finance-summary pdf-card pdf-break-avoid">
+      ${items.map(([label, field, type]) => `
+        <div>
+          <span>${escapeHtml(label)}</span>
+          <strong>${type === "money" ? money(state.fields[field]) : `${formatPlainNumber(state.fields[field])} dias`}</strong>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 function renderDocumentSwotMatrix() {
@@ -366,6 +614,30 @@ function renderDocumentSwotMatrix() {
   `;
 }
 
+function renderDocumentSwotBlocks() {
+  const items = [
+    ["Forças", "forcas"],
+    ["Fraquezas", "fraquezas"],
+    ["Oportunidades", "oportunidades"],
+    ["Ameaças", "ameacas"]
+  ].filter(([, field]) => isFilled(state.fields[field]));
+
+  return items.flatMap(([label, field]) => {
+    const chunks = splitTextForPrint(state.fields[field], 680);
+
+    return chunks.map((chunk, index) => ({
+      html: `
+        <div class="document-swot-card pdf-card pdf-break-avoid">
+          <strong>${escapeHtml(label)}${chunks.length > 1 ? ` <span>parte ${index + 1}/${chunks.length}</span>` : ""}</strong>
+          <p>${formatDocumentValue({ name: field }, chunk)}</p>
+        </div>
+      `,
+      units: 320 + chunk.length,
+      forceAlone: false
+    }));
+  });
+}
+
 function renderDocumentTimelineRoadmap() {
   const rows = (state.tables.cronogramaTable || []).filter((row) => row.some(isFilled));
   if (!rows.length) return "";
@@ -383,7 +655,84 @@ function renderDocumentTimelineRoadmap() {
   `;
 }
 
-function renderDocumentTable(table) {
+function renderDocumentTimelineBlocks() {
+  const rows = (state.tables.cronogramaTable || []).filter((row) => row.some(isFilled));
+  if (!rows.length) return [];
+
+  return rows.map((row, index) => {
+    const details = [row[1], row[3], row[4]].filter(Boolean).join(" • ");
+    const chunks = splitTextForPrint(details, 520);
+    const suffix = chunks.length > 1 ? ` - parte 1/${chunks.length}` : "";
+    const firstBlock = {
+      html: renderDocumentTimelineItem(row, chunks[0] || "", suffix),
+      units: 420 + String(row[0] || "").length + String(chunks[0] || "").length,
+      forceAlone: false
+    };
+
+    if (chunks.length <= 1) return firstBlock;
+
+    return [
+      firstBlock,
+      ...chunks.slice(1).map((chunk, chunkIndex) => ({
+        html: renderDocumentTimelineItem(row, chunk, ` - parte ${chunkIndex + 2}/${chunks.length}`, true),
+        units: 360 + chunk.length,
+        forceAlone: false
+      }))
+    ];
+  }).flat();
+}
+
+function renderDocumentTimelineItem(row, details, suffix = "", isContinuation = false) {
+  return `
+    <div class="document-roadmap-item pdf-card pdf-break-avoid">
+      <span>${escapeHtml(formatDate(row[2]) || "Prazo a definir")}${escapeHtml(suffix)}</span>
+      <strong>${escapeHtml(isContinuation ? `${row[0] || "Atividade"} (continuação)` : row[0] || "Atividade")}</strong>
+      <p>${escapeHtml(details)}</p>
+    </div>
+  `;
+}
+
+function renderDocumentTableBlocks(table) {
+  if (table.id === "sociosTable") return renderDocumentCardTableBlocks(table);
+  if (table.id === "projecaoMensalTable") {
+    const rows = (state.tables[table.id] || []).filter((row) => row.some(isFilled));
+    return chunkArray(rows, 6).map((rowChunk, index) => renderDocumentTableBlock(table, rowChunk, {
+      titleSuffix: rows.length > 6 ? ` - meses ${index * 6 + 1} a ${index * 6 + rowChunk.length}` : "",
+      compact: true,
+      units: 980 + rowChunk.length * 170
+    })).filter(Boolean);
+  }
+
+  const rows = (state.tables[table.id] || []).filter((row) => row.some(isFilled));
+  if (!rows.length) return "";
+  return [renderDocumentTableBlock(table, rows)].filter(Boolean);
+}
+
+function renderDocumentTableBlock(table, rows, options = {}) {
+  if (!rows.length) return null;
+  const compactClass = options.compact || FINANCIAL_TABLE_IDS.has(table.id) ? " document-table-compact pdf-table-compact" : "";
+  const colgroup = renderDocumentTableColgroup(table);
+  const title = `${table.title}${options.titleSuffix || ""}`;
+  const html = `
+    <div class="document-table-block pdf-break-avoid">
+    <table class="document-table pdf-table${compactClass}" data-table-id="${table.id}">
+      <caption><strong>${escapeHtml(title)}</strong></caption>
+      ${colgroup}
+      <thead><tr>${table.columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map((row) => `<tr>${table.columns.map((_, index) => `<td>${formatDocumentTableCell(table, index, row[index])}</td>`).join("")}</tr>`).join("")}</tbody>
+    </table>
+    </div>
+  `;
+
+  return {
+    html,
+    units: options.units || 720 + rows.length * table.columns.length * 80,
+    isTable: true,
+    forceAlone: rows.length > 8 && table.columns.length > 4
+  };
+}
+
+function renderLegacyDocumentTable(table) {
   const rows = (state.tables[table.id] || []).filter((row) => row.some(isFilled));
   if (!rows.length) return "";
   return `
@@ -395,13 +744,97 @@ function renderDocumentTable(table) {
   `;
 }
 
+function renderDocumentCardTableBlocks(table) {
+  const rows = (state.tables[table.id] || []).filter((row) => row.some(isFilled));
+  if (!rows.length) return [];
+
+  const cards = rows.map((row) => `
+    <article class="document-card-list-item pdf-card pdf-break-avoid">
+      ${table.columns.map((column, index) => isFilled(row[index]) ? `
+        <div>
+          <strong>${escapeHtml(column)}</strong>
+          <p>${formatDocumentTableCell(table, index, row[index])}</p>
+        </div>
+      ` : "").join("")}
+    </article>
+  `);
+
+  return chunkArray(cards, 2).map((chunk, index) => ({
+    html: `
+      <section class="document-card-list">
+        <h3>${escapeHtml(table.title)}${cards.length > 2 ? ` - grupo ${index + 1}` : ""}</h3>
+        ${chunk.join("")}
+      </section>
+    `,
+    units: 520 + chunk.join("").replace(/<[^>]+>/g, " ").length,
+    isTable: true
+  }));
+}
+
+function renderDocumentTableColgroup(table) {
+  const widths = {
+    concorrentesTable: [20, 26, 26, 28],
+    fornecedoresTable: [26, 28, 22, 24],
+    investimentosTable: [25, 16, 11, 14, 14, 20],
+    receitasTable: [30, 14, 17, 17, 22],
+    custosFixosTable: [30, 18, 20, 32],
+    custosVariaveisTable: [34, 22, 16, 28],
+    capitalGiroTable: [30, 16, 22, 32],
+    projecaoMensalTable: [14, 17, 17, 18, 17, 17],
+    cronogramaTable: [30, 20, 15, 15, 20]
+  }[table.id];
+
+  if (!widths) return "";
+  return `<colgroup>${widths.map((width) => `<col style="width:${width}%">`).join("")}</colgroup>`;
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
 function formatDocumentTableCell(table, columnIndex, value) {
   if (!isFilled(value)) return "";
   if (table.dateColumn === columnIndex) return escapeHtml(formatDate(value));
-  const numericColumns = new Set([table.numericColumn, ...(table.numericColumns || [])].filter((column) => column !== undefined));
-  if (numericColumns.has(columnIndex)) return money(value);
-  if (/valor|receita|preço|preco/i.test(table.columns[columnIndex])) return money(value);
+  const format = getDocumentTableColumnFormat(table, columnIndex, value);
+  if (format === "money") return money(value);
+  if (format === "percent") return formatPercentCell(value);
+  if (format === "number") return escapeHtml(formatPlainNumber(value));
   return escapeHtml(value);
+}
+
+function getDocumentTableColumnFormat(table, columnIndex, value = "") {
+  const column = String(table.columns[columnIndex] || "").toLowerCase();
+  const normalizedColumn = column.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const numericColumns = new Set([table.numericColumn, ...(table.numericColumns || [])].filter((column) => column !== undefined));
+
+  if (table.id === "custosVariaveisTable" && columnIndex === 1) {
+    const row = (state.tables[table.id] || []).find((item) => item[columnIndex] === value);
+    return String(row?.[2] || "").toLowerCase().includes("percent") ? "percent" : "money";
+  }
+  if (/participacao|percentual/.test(normalizedColumn)) return "percent";
+  if (/quantidade|prazo|dias/.test(normalizedColumn)) return "number";
+  if (/valor|receita|preco|custo|lucro|saldo|investimento|capital|reserva|estoque/.test(normalizedColumn)) return "money";
+  return numericColumns.has(columnIndex) ? "number" : "text";
+}
+
+function formatPlainNumber(value) {
+  const number = toNumber(value);
+  if (!Number.isFinite(number)) return String(value || "");
+  return Number.isInteger(number)
+    ? String(number)
+    : number.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
+function formatPercentCell(value) {
+  const raw = String(value || "").trim();
+  if (raw.includes("%")) return escapeHtml(raw);
+  const number = toNumber(value);
+  if (!Number.isFinite(number)) return escapeHtml(raw);
+  return `${number.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 }
 
 function sanitizeColor(value, fallback) {
@@ -414,3 +847,25 @@ function formatDocumentValue(field, value) {
   if (field.inputType === "number") return escapeHtml(String(value).replace(".", ","));
   return escapeHtml(value).replace(/\n/g, "<br>");
 }
+
+function formatLimitedDocumentTableCell(table, columnIndex, value) {
+  if (!isFilled(value)) return "";
+  const normalizedValue = normalizeTableCellValueByLimit(table, columnIndex, value);
+  if (table.dateColumn === columnIndex) return escapeHtml(formatDate(normalizedValue));
+  const format = getDocumentTableColumnFormat(table, columnIndex, normalizedValue);
+  if (format === "money") return money(normalizedValue);
+  if (format === "percent") return formatPercentCell(normalizedValue);
+  if (format === "number") return escapeHtml(formatPlainNumber(normalizedValue));
+  return escapeHtml(normalizedValue);
+}
+
+function formatLimitedDocumentValue(field, value) {
+  const normalizedValue = normalizeFieldValueByLimit(field.name, value);
+  if (field.inputType === "date") return escapeHtml(formatDate(normalizedValue));
+  if (MONEY_FIELDS.has(field.name)) return money(normalizedValue);
+  if (field.inputType === "number") return escapeHtml(String(normalizedValue).replace(".", ","));
+  return escapeHtml(normalizedValue).replace(/\n/g, "<br>");
+}
+
+formatDocumentTableCell = formatLimitedDocumentTableCell;
+formatDocumentValue = formatLimitedDocumentValue;

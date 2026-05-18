@@ -2,7 +2,7 @@ function collectFields() {
   const fields = Array.from(form.querySelectorAll("[data-field]"));
   const beforeFilled = Object.values(state.fields || {}).filter(isFilled).length;
   fields.forEach((field) => {
-    state.fields[field.dataset.field] = field.value;
+    state.fields[field.dataset.field] = normalizeFieldValueByLimit(field.dataset.field, field.value);
   });
   pdfDebugLog("collectFields", {
     inputCount: form.querySelectorAll("input").length,

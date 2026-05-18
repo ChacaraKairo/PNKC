@@ -241,6 +241,11 @@ const detailedFieldHelp = {
   custosVariaveis: "Custos variaveis aumentam ou diminuem conforme as vendas. Exemplo: materia-prima, comissoes, taxas de cartao, embalagens, frete, impostos sobre venda e insumos.",
   lucroLiquido: "Informe o resultado esperado depois de descontar custos, despesas e impostos. Se ainda nao souber, estime com cuidado e atualize apos detalhar receitas e gastos.",
   capitalGiro: "Capital de giro e o dinheiro necessario para manter a operacao entre pagamentos e recebimentos. Inclua estoque, prazo de clientes, despesas mensais e reserva de seguranca.",
+  reservaMinima: "Informe uma reserva financeira para cobrir imprevistos e meses de baixa receita. Uma boa referencia inicial e manter caixa para algumas despesas fixas.",
+  prazoRecebimento: "Informe em quantos dias, em media, a empresa recebe dos clientes apos vender. Esse prazo ajuda a calcular necessidade de caixa.",
+  prazoPagamento: "Informe em quantos dias, em media, a empresa paga fornecedores e despesas. Compare com o prazo de recebimento para evitar falta de caixa.",
+  estoqueInicial: "Estime o valor necessario para comprar o primeiro estoque ou insumos antes das vendas comecarem.",
+  necessidadeCapitalGiro: "Calcule ou estime quanto dinheiro ficara preso na operacao para cobrir estoque, prazos de recebimento e despesas ate o caixa entrar.",
   forcas: "Forcas sao vantagens internas do negocio, ou seja, pontos que dependem da empresa. Exemplo: equipe experiente, tecnologia propria, localizacao, reputacao ou baixo custo.",
   fraquezas: "Fraquezas sao limitacoes internas que precisam ser melhoradas. Exemplo: pouca experiencia em vendas, capital limitado, dependencia de fornecedor ou falta de processos.",
   oportunidades: "Oportunidades sao fatores externos favoraveis. Exemplo: crescimento do mercado, novas tecnologias, mudanca de comportamento, incentivos, parcerias ou baixa concorrencia local.",
@@ -264,14 +269,138 @@ const detailedTableHelp = {
   cronogramaTable: "Transforme o plano em execucao. Cada linha deve ter uma meta ou atividade clara, responsavel, prazo, status e observacoes sobre dependencia ou proximo passo."
 };
 
+const FIELD_MAX_LENGTHS = {
+  nomeEmpresa: 90,
+  nomeFantasia: 70,
+  autor: 80,
+  cidadeUf: 60,
+  ano: 4,
+  slogan: 120,
+  razaoSocial: 120,
+  cnpj: 25,
+  cnae: 120,
+  endereco: 180,
+  regiao: 120,
+  nicho: 180,
+  publicoAlvo: 700,
+  produtosServicos: 700,
+  expectativas: 700,
+  indicadoresResumo: 700,
+  missao: 500,
+  visao: 500,
+  valores: 700,
+  equipeAtual: 700,
+  competenciasCriticas: 700,
+  objetoSocial: 700,
+  licencas: 600,
+  riscosLegais: 700,
+  persona: 900,
+  tendencias: 900,
+  posicionamento: 700,
+  diferencial: 800,
+  preco: 700,
+  canaisVenda: 700,
+  promocao: 800,
+  localFuncionamento: 700,
+  estruturaNecessaria: 700,
+  equipamentos: 600,
+  softwares: 600,
+  equipe5anos: 700,
+  capacidade: 600,
+  forcas: 700,
+  fraquezas: 700,
+  oportunidades: 700,
+  ameacas: 700,
+  fatoresCriticos: 800,
+  acoesCurtoPrazo: 900,
+  observacoesFinais: 1000,
+  resumoNegocio: 1400,
+  definicaoNegocio: 1400,
+  clientes: 1400,
+  problemaMercado: 1200,
+  propostaValor: 900,
+  jornada: 1000,
+  processosInternos: 1000,
+  processoOperacional: 1000
+};
+
+const TABLE_MAX_CELL_LENGTHS = {
+  sociosTable: 180,
+  concorrentesTable: 220,
+  fornecedoresTable: 180,
+  investimentosTable: 120,
+  receitasTable: 120,
+  custosFixosTable: 120,
+  custosVariaveisTable: 120,
+  capitalGiroTable: 120,
+  projecaoMensalTable: 80,
+  cronogramaTable: 160
+};
+
+let limitNormalizationReport = [];
+
+function findFieldConfig(fieldName) {
+  for (const section of sections) {
+    const field = (section.fields || []).find((item) => item.name === fieldName);
+    if (field) return field;
+  }
+
+  return null;
+}
+
+function getFieldMaxLength(field) {
+  if (!field || field.type || field.kind === "select") return null;
+  if (field.inputType === "number" || field.inputType === "date" || field.inputType === "color") return null;
+  if (Number.isFinite(field.maxLength)) return field.maxLength;
+  if (field.kind === "textarea") return field.full ? 900 : 600;
+  return 120;
+}
+
+function getTableCellMaxLength(table, columnIndex) {
+  if (!table) return 160;
+  if (Array.isArray(table.maxCellLengths) && Number.isFinite(table.maxCellLengths[columnIndex])) {
+    return table.maxCellLengths[columnIndex];
+  }
+  if (Number.isFinite(table.maxCellLength)) return table.maxCellLength;
+  return 160;
+}
+
+function normalizeFieldValueByLimit(fieldName, value) {
+  const field = findFieldConfig(fieldName);
+  const maxLength = getFieldMaxLength(field);
+  if (!maxLength) return value;
+
+  const text = String(value || "");
+  if (text.length <= maxLength) return text;
+
+  limitNormalizationReport.push({ type: "field", name: fieldName, maxLength, originalLength: text.length });
+  console.warn(`[PNKC] Campo ${fieldName} foi cortado para ${maxLength} caracteres.`);
+  return text.slice(0, maxLength).trim();
+}
+
+function normalizeTableCellValueByLimit(table, columnIndex, value) {
+  const numericColumns = new Set([table?.numericColumn, ...(table?.numericColumns || [])].filter((column) => column !== undefined));
+  if (!table || table.dateColumn === columnIndex || table.selectColumn === columnIndex || numericColumns.has(columnIndex)) return value;
+
+  const maxLength = getTableCellMaxLength(table, columnIndex);
+  const text = String(value || "");
+  if (!maxLength || text.length <= maxLength) return text;
+
+  limitNormalizationReport.push({ type: "table", name: table.id, columnIndex, maxLength, originalLength: text.length });
+  console.warn(`[PNKC] Celula da tabela ${table.id} foi cortada para ${maxLength} caracteres.`);
+  return text.slice(0, maxLength).trim();
+}
+
 function enrichGuidance() {
   sections.forEach((section) => {
     (section.fields || []).forEach((field) => {
       if (detailedFieldHelp[field.name]) field.help = detailedFieldHelp[field.name];
+      if (FIELD_MAX_LENGTHS[field.name]) field.maxLength = FIELD_MAX_LENGTHS[field.name];
     });
 
     (section.tables || []).forEach((table) => {
       if (detailedTableHelp[table.id]) table.help = detailedTableHelp[table.id];
+      if (TABLE_MAX_CELL_LENGTHS[table.id]) table.maxCellLength = TABLE_MAX_CELL_LENGTHS[table.id];
     });
   });
 }

@@ -19,8 +19,9 @@
       <div class="header-inner">
         <a
           class="brand"
-          href="index.html#home"
-          aria-label="Plano de Negocios - Koru Company - inicio"
+          href="https://www.seusiteempresarial.com.br"
+          data-company-website-link
+          aria-label="Abrir site empresarial da Koru Company"
         >
           <span class="brand-mark" aria-hidden="true">P</span>
           <span>
@@ -78,14 +79,64 @@
               <h2 id="canvasBoardTitle">Business Model Canvas</h2>
               <p>Clique em uma secao para ampliar as notinhas.</p>
             </div>
-            <button type="button" class="button ghost" id="clearCanvasButton">
-              Limpar Canvas
-            </button>
+            <div class="canvas-actions">
+              <button class="button ghost" type="button" id="copyCanvasPromptButton">
+                Copiar perguntas
+              </button>
+              <button class="button ghost" type="button" id="saveCanvasButton">
+                Salvar Canvas
+              </button>
+              <button class="button ghost" type="button" id="exportCanvasButton">
+                Exportar JSON
+              </button>
+              <label class="button ghost file-button" for="importCanvasFile">
+                Importar JSON
+              </label>
+              <input
+                class="visually-hidden"
+                id="importCanvasFile"
+                type="file"
+                accept="application/json"
+              />
+              <button class="button primary" type="button" id="exportCanvasPngButton">
+                Exportar PNG
+              </button>
+              <button type="button" class="button ghost" id="clearCanvasButton">
+                Limpar Canvas
+              </button>
+            </div>
           </div>
-          <div id="canvasBoard" class="canvas-board"></div>
+          <div
+            class="notice"
+            id="canvasNotice"
+            role="status"
+            aria-live="polite"
+          ></div>
+          <section id="canvasExportSurface" class="canvas-export-surface">
+            <div class="canvas-export-header">
+              <img src="assets/img/koru-company.jpg" alt="Koru Company" />
+              <div>
+                <strong>Business Model Canvas</strong>
+                <span id="canvasExportCompanyName">Koru Company</span>
+              </div>
+              <img
+                id="canvasExportCompanyLogo"
+                src=""
+                alt="Logo da empresa"
+                hidden
+              />
+            </div>
+            <div id="canvasBoard" class="canvas-board"></div>
+            <div class="canvas-export-watermark" aria-hidden="true">KORU</div>
+            <p class="canvas-export-signature">
+              Koru Company - Business Model Canvas
+            </p>
+          </section>
         </section>
       </section>
     </main>
+
+    <footer class="company-footer" data-company-footer></footer>
 
     <div id="canvasModalBackdrop" class="canvas-modal-backdrop" hidden>
       <section
@@ -116,6 +167,11 @@
       </section>
     </div>
 
+    <script
+      src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+      defer
+    ></script>
+    <script src="assets/js/data/contacts.js" defer></script>
     <script src="assets/js/canvas.js" defer></script>
   </body>
 </html>

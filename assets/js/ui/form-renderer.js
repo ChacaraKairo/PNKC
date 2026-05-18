@@ -42,6 +42,7 @@ function renderForm() {
   });
   renderImages();
   markFilledFields();
+  updateAllCharacterCounters();
 }
 
 function renderFields(section) {
@@ -53,30 +54,36 @@ function renderFields(section) {
 
 function renderField(field) {
   if (field.type === "logo") {
+    const help = getFieldHelp(field);
     return `
       <div class="upload-block">
         <label for="logoInput">${field.label}</label>
         <input id="logoInput" type="file" accept="image/*">
-        <p class="help-text">${field.help}</p>
+        <p class="help-text">${help}</p>
         <div class="logo-preview" id="logoPreview">LOGO</div>
       </div>`;
   }
 
   if (field.type === "attachments") {
+    const help = getFieldHelp(field);
     return `
       <div class="upload-block">
         <label for="attachmentInput">${field.label}</label>
         <input id="attachmentInput" type="file" accept="image/*" multiple>
-        <p class="help-text">${field.help}</p>
+        <p class="help-text">${help}</p>
         <div class="attachments-grid" id="attachmentsGrid"></div>
       </div>`;
   }
 
   const id = `field-${field.name}`;
+  const helpId = `${id}-help`;
+  const help = getFieldHelp(field);
   const tag = field.kind === "textarea" ? "textarea" : field.kind === "select" ? "select" : "input";
   const required = field.required ? "required" : "";
+  const maxLength = getFieldMaxLength(field);
+  const maxLengthAttr = maxLength ? `maxlength="${maxLength}"` : "";
   const fieldClass = `field ${field.full ? "full" : ""} ${field.required ? "required" : ""}`;
-  const common = `id="${id}" data-field="${field.name}" ${required}`;
+  const common = `id="${id}" data-field="${field.name}" aria-describedby="${helpId}" ${required} ${maxLengthAttr}`;
   const status = field.required ? `<span class="field-status">Obrigatório</span>` : `<span class="field-status">Opcional</span>`;
   let control = "";
 
@@ -93,7 +100,12 @@ function renderField(field) {
     <div class="${fieldClass}">
       <label for="${id}"><span>${field.label}</span>${status}</label>
       ${control}
-      ${field.help ? `<p class="help-text">${field.help}</p>` : ""}
+      <p class="help-text" id="${helpId}">${help}</p>
+      ${maxLength ? `
+        <div class="character-counter" data-character-counter="${field.name}">
+          ${String(getField(field.name) || "").length} / ${maxLength} caracteres
+        </div>
+      ` : ""}
     </div>`;
 }
 
@@ -123,6 +135,7 @@ function renderTableBlock(table) {
         <button class="button ghost" type="button" data-add-row="${table.id}">Adicionar linha</button>
       </div>
       ${table.help ? `<p class="table-help">${table.help}</p>` : ""}
+      ${renderTableColumnGuidance(table)}
       <div class="table-wrap">
         <table id="${table.id}">
           <thead><tr>${table.columns.map((column) => `<th>${column}</th>`).join("")}<th>Ações</th></tr></thead>
@@ -142,6 +155,8 @@ function renderTableRows(table) {
       const td = document.createElement("td");
       const input = createTableInput(table, rowIndex, columnIndex);
       input.setAttribute("aria-label", `${column} - linha ${rowIndex + 1}`);
+      input.setAttribute("title", getTableColumnHelp(table, columnIndex));
+      input.setAttribute("placeholder", getTableColumnPlaceholder(table, columnIndex));
       td.appendChild(input);
       tr.appendChild(td);
     });
@@ -174,8 +189,14 @@ function createTableInput(table, rowIndex, columnIndex) {
     select.dataset.row = rowIndex;
     select.dataset.column = columnIndex;
     select.setAttribute("aria-label", `${table.columns[columnIndex]} - linha ${rowIndex + 1}`);
+    select.setAttribute("title", getTableColumnHelp(table, columnIndex));
     select.innerHTML = ["", ...(table.options || [])].map((option) => `<option ${state.tables[table.id][rowIndex][columnIndex] === option ? "selected" : ""}>${option}</option>`).join("");
     return select;
+  }
+
+  const maxLength = getTableCellMaxLength(table, columnIndex);
+  if (maxLength && input.tagName !== "SELECT" && input.type !== "number" && input.type !== "date") {
+    input.maxLength = maxLength;
   }
 
   return input;
@@ -185,10 +206,82 @@ function emptyRow(table) {
   return table.columns.map(() => "");
 }
 
+function getFieldHelp(field) {
+  if (field?.help) return field.help;
+  if (field?.kind === "select") return "Selecione a opcao que melhor representa a situacao atual. Se ainda nao souber, escolha a opcao em branco e revise depois.";
+  if (field?.inputType === "number") return "Informe apenas numeros. Use ponto ou virgula para centavos quando o campo representar dinheiro.";
+  if (field?.inputType === "date") return "Escolha a data prevista ou real relacionada a este item.";
+  if (field?.inputType === "color") return "Escolha uma cor para personalizar a aparencia do relatorio em PDF.";
+  if (field?.kind === "textarea") return "Explique com frases completas, exemplos e premissas. Voce pode voltar e complementar depois.";
+  return "Preencha com a informacao solicitada de forma direta. Se ainda nao souber, registre uma estimativa ou deixe para revisar depois.";
+}
+
+function renderTableColumnGuidance(table) {
+  if (!table?.columns?.length) return "";
+
+  return `
+    <dl class="table-column-guidance">
+      ${table.columns.map((column, index) => `
+        <div>
+          <dt>${escapeHtml(column)}</dt>
+          <dd>${escapeHtml(getTableColumnHelp(table, index))}</dd>
+        </div>
+      `).join("")}
+    </dl>`;
+}
+
+function getTableColumnHelp(table, columnIndex) {
+  const columnName = table?.columns?.[columnIndex] || "este campo";
+  const column = String(columnName).toLowerCase();
+  const numericColumns = new Set([table?.numericColumn, ...(table?.numericColumns || [])].filter((item) => item !== undefined));
+
+  if (table?.dateColumn === columnIndex || /prazo|data/.test(column)) return "Informe uma data ou prazo realista para acompanhamento.";
+  if (table?.selectColumn === columnIndex) return "Selecione a opcao que descreve melhor esta linha.";
+  if (numericColumns.has(columnIndex) || /valor|preco|receita|custo|quantidade|participacao|saldo|lucro|percentual/.test(column)) return "Preencha com numero, valor monetario ou percentual, conforme o titulo da coluna.";
+  if (/contato/.test(column)) return "Informe telefone, e-mail, site ou outro canal de contato.";
+  if (/observ/.test(column)) return "Use para explicar premissas, detalhes, pendencias ou criterios usados.";
+  if (/respons/.test(column)) return "Informe a pessoa, cargo ou area responsavel.";
+  if (/status/.test(column)) return "Indique a situacao atual para facilitar o acompanhamento.";
+  if (/fortes/.test(column)) return "Liste vantagens, recursos ou qualidades relevantes.";
+  if (/fracos/.test(column)) return "Liste limitacoes, riscos ou pontos de melhoria.";
+  if (/diferenciar/.test(column)) return "Explique como sua empresa sera percebida como diferente ou melhor.";
+  return `Preencha ${columnName} com uma informacao objetiva para esta linha.`;
+}
+
+function getTableColumnPlaceholder(table, columnIndex) {
+  const column = table?.columns?.[columnIndex] || "";
+  return column ? `Preencha: ${column}` : "Preencha este campo";
+}
+
 function findTableConfig(tableId) {
   for (const section of sections) {
     const table = (section.tables || []).find((item) => item.id === tableId);
     if (table) return table;
   }
   return null;
+}
+
+function updateCharacterCounter(fieldName) {
+  const input = document.querySelector(`[data-field="${fieldName}"]`);
+  const counter = document.querySelector(`[data-character-counter="${fieldName}"]`);
+  if (!input || !counter) return;
+
+  const field = findFieldConfig(fieldName);
+  const maxLength = getFieldMaxLength(field);
+  if (!maxLength) return;
+
+  const currentLength = String(input.value || "").length;
+  const remaining = maxLength - currentLength;
+
+  counter.textContent = `${currentLength} / ${maxLength} caracteres`;
+  counter.classList.toggle("warning", remaining <= Math.ceil(maxLength * 0.15));
+  counter.classList.toggle("danger", remaining <= 0);
+  input.classList.toggle("near-limit", remaining <= Math.ceil(maxLength * 0.15));
+  input.classList.toggle("at-limit", remaining <= 0);
+}
+
+function updateAllCharacterCounters() {
+  document.querySelectorAll("[data-character-counter]").forEach((counter) => {
+    updateCharacterCounter(counter.dataset.characterCounter);
+  });
 }

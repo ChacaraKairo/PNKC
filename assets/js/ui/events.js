@@ -22,6 +22,7 @@ function bindEvents() {
 
   form.addEventListener("input", (event) => {
     if (event.target.matches("[data-field]")) {
+      updateCharacterCounter(event.target.dataset.field);
       dirty = true;
       saveState();
       markFilledFields();
@@ -30,7 +31,8 @@ function bindEvents() {
 
     if (event.target.matches("[data-table]")) {
       const { table, row, column } = event.target.dataset;
-      state.tables[table][Number(row)][Number(column)] = event.target.value;
+      const tableConfig = findTableConfig(table);
+      state.tables[table][Number(row)][Number(column)] = normalizeTableCellValueByLimit(tableConfig, Number(column), event.target.value);
       dirty = true;
       saveState();
       updateFinancialCards();
@@ -39,6 +41,7 @@ function bindEvents() {
 
   form.addEventListener("change", (event) => {
     if (event.target.matches("[data-field]")) {
+      updateCharacterCounter(event.target.dataset.field);
       dirty = true;
       saveState();
       markFilledFields();
@@ -47,7 +50,8 @@ function bindEvents() {
 
     if (event.target.matches("[data-table]")) {
       const { table, row, column } = event.target.dataset;
-      state.tables[table][Number(row)][Number(column)] = event.target.value;
+      const tableConfig = findTableConfig(table);
+      state.tables[table][Number(row)][Number(column)] = normalizeTableCellValueByLimit(tableConfig, Number(column), event.target.value);
       dirty = true;
       saveState();
       updateFinancialCards();
@@ -77,6 +81,8 @@ function bindEvents() {
   document.getElementById("bottomNextButton").addEventListener("click", nextStep);
   document.getElementById("prevButton").addEventListener("click", prevStep);
   document.getElementById("bottomPrevButton").addEventListener("click", prevStep);
+  document.getElementById("copyStepPromptButton").addEventListener("click", (event) => copyCurrentStepPrompt(event.currentTarget));
+  document.getElementById("bottomCopyStepPromptButton").addEventListener("click", (event) => copyCurrentStepPrompt(event.currentTarget));
   document.getElementById("saveButton").addEventListener("click", (event) => {
     if (saveState(true)) {
       buttonFeedback(event.currentTarget, "success", "Salvo");
@@ -99,6 +105,105 @@ function bindEvents() {
     event.preventDefault();
     event.returnValue = "";
   });
+}
+
+async function copyCurrentStepPrompt(button) {
+  const section = sections[currentStep];
+  if (!section) return;
+
+  const copied = await copyTextToClipboard(buildSectionPrompt(section, currentStep));
+
+  if (copied) {
+    buttonFeedback(button, "success", "Copiado");
+    showNotice("Perguntas e explicacoes desta etapa copiadas. Cole em uma IA para receber ajuda no preenchimento.", "success");
+  } else {
+    buttonFeedback(button, "error", "Erro");
+    showNotice("Nao foi possivel copiar automaticamente. Verifique a permissao de area de transferencia do navegador.", "error");
+  }
+}
+
+function buildSectionPrompt(section, index) {
+  const lines = [
+    "Quero ajuda para preencher esta etapa de um plano de negocios.",
+    "Use as perguntas e explicacoes abaixo para me orientar. Faca perguntas objetivas quando faltar informacao e nao invente dados.",
+    "",
+    `Etapa ${index + 1}: ${section.title}`,
+    `Objetivo da etapa: ${section.help || "Preencher as informacoes solicitadas."}`,
+    ""
+  ];
+
+  const fields = (section.fields || []).filter((field) => !field.type);
+  if (fields.length) {
+    lines.push("Perguntas do formulario:");
+    fields.forEach((field, fieldIndex) => {
+      lines.push(`${fieldIndex + 1}. ${field.label}${field.required ? " (obrigatorio)" : ""}`);
+      lines.push(`   Explicacao: ${getFieldHelp(field)}`);
+      if (field.kind === "select" && field.options?.length) {
+        lines.push(`   Opcoes: ${field.options.filter(Boolean).join(", ")}`);
+      }
+      if (field.placeholder) lines.push(`   Exemplo/placeholder: ${field.placeholder}`);
+    });
+    lines.push("");
+  }
+
+  const uploadFields = (section.fields || []).filter((field) => field.type);
+  if (uploadFields.length) {
+    lines.push("Campos de imagem/anexo:");
+    uploadFields.forEach((field, fieldIndex) => {
+      lines.push(`${fieldIndex + 1}. ${field.label}`);
+      lines.push(`   Explicacao: ${getFieldHelp(field)}`);
+    });
+    lines.push("");
+  }
+
+  if (section.tables?.length) {
+    lines.push("Tabelas desta etapa:");
+    section.tables.forEach((table, tableIndex) => {
+      lines.push(`${tableIndex + 1}. ${table.title}`);
+      if (table.help) lines.push(`   Explicacao da tabela: ${table.help}`);
+      table.columns.forEach((column, columnIndex) => {
+        lines.push(`   - ${column}: ${getTableColumnHelp(table, columnIndex)}`);
+      });
+    });
+    lines.push("");
+  }
+
+  lines.push("Me ajude a preencher esta etapa com respostas claras, completas e realistas para o meu negocio.");
+  return lines.join("\n");
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    return copyTextWithFallback(text);
+  }
+
+  return copyTextWithFallback(text);
+}
+
+function copyTextWithFallback(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-1000px";
+  textarea.style.left = "-1000px";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+
+  textarea.remove();
+  return copied;
 }
 
 function setCurrentStep(index) {

@@ -12,7 +12,9 @@
 
 .document-preview-active .document-page {
   width: 210mm;
+  height: 297mm;
   min-height: 297mm;
+  max-height: 297mm;
   max-width: 100%;
   margin: 0 auto 24px;
   box-shadow: 0 20px 60px rgba(23, 21, 18, 0.22);
@@ -21,8 +23,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  overflow: visible;
-  padding: 18mm 16mm 15mm;
+  overflow: hidden;
+  padding: 14mm 14mm 12mm;
   background: #f7f3ea;
   isolation: isolate;
 }
@@ -62,8 +64,8 @@
 }
 
 .document-preview-active .document-header {
-  min-height: 13mm;
-  margin-bottom: 9mm;
+  min-height: 11mm;
+  margin-bottom: 6mm;
   padding-bottom: 3mm;
   border-bottom: 1px solid #dacdaf;
 }
@@ -75,7 +77,7 @@
 }
 
 .document-preview-active .document-footer {
-  min-height: 9mm;
+  min-height: 8mm;
   margin-top: auto;
   padding-top: 3mm;
   border-top: 1px solid #dacdaf;
@@ -107,7 +109,7 @@
 .document-preview-active .document-closing .document-body {
   flex-direction: column;
   justify-content: center;
-  padding: 34mm 22mm 28mm;
+  padding: 30mm 22mm 24mm;
 }
 
 .document-preview-active .document-cover-strip {
@@ -138,7 +140,7 @@
 .document-preview-active .document-logo {
   width: 28mm;
   height: 28mm;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 4mm;
   margin-bottom: 9mm;
 }
@@ -159,16 +161,20 @@
 .document-preview-active .document-field,
 .document-preview-active .document-finance-dashboard,
 .document-preview-active .document-swot-matrix div,
+.document-preview-active .document-swot-card,
 .document-preview-active .document-roadmap-item {
   border: 1px solid #e0d6c5;
   background: rgba(255, 252, 245, 0.92);
 }
 
 .document-preview-active .document-field {
-  margin: 0 0 5mm;
-  padding: 4.5mm 5mm;
+  margin: 0 0 3.4mm;
+  padding: 3.5mm 4mm;
   border-left: 3px solid var(--print-accent, #b08a4a);
   border-radius: 2mm;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
 }
 
 .document-preview-active .document-field strong {
@@ -177,6 +183,17 @@
   color: var(--print-primary, #171512);
   font-size: 9.5pt;
   text-transform: uppercase;
+}
+
+.document-preview-active .document-field strong span {
+  color: #8a7d66;
+  font-size: 7.5pt;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.document-preview-active .document-field p {
+  margin: 0;
 }
 
 .document-preview-active .document-section-title {
@@ -197,11 +214,25 @@
   font-weight: 900;
 }
 
+.document-preview-active .document-section-title small {
+  color: #8a7d66;
+  font-size: 8pt;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .document-preview-active .document-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 8.7pt;
+  margin: 3mm 0 4.5mm;
+  font-size: 7.8pt;
+  line-height: 1.35;
+}
+
+.document-preview-active .document-table-block {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .document-preview-active .document-table th {
@@ -212,14 +243,63 @@
 .document-preview-active .document-table th,
 .document-preview-active .document-table td {
   border: 1px solid #d9cfbd;
-  padding: 3.2mm;
+  padding: 2mm;
   vertical-align: top;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: manual;
+  white-space: normal;
+}
+
+.document-preview-active .document-table th {
+  line-height: 1.18;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+.document-preview-active .document-table-compact {
+  font-size: 7pt;
+  line-height: 1.28;
+}
+
+.document-preview-active .document-table-compact th,
+.document-preview-active .document-table-compact td {
+  padding: 1.55mm;
 }
 
 .document-preview-active .document-swot-matrix {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 4mm;
+}
+
+.document-preview-active .document-swot-card {
+  margin: 0 0 3mm;
+  padding: 3.5mm;
+  border-top: 4px solid var(--print-accent, #b08a4a);
+  border-radius: 2mm;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.document-preview-active .document-swot-card strong {
+  display: block;
+  margin-bottom: 2mm;
+  color: var(--print-primary, #171512);
+  font-size: 13pt;
+}
+
+.document-preview-active .document-swot-card strong span {
+  color: #8a7d66;
+  font-size: 7.5pt;
+  font-weight: 800;
+  text-transform: none;
+}
+
+.document-preview-active .document-swot-card p {
+  margin: 0;
 }
 
 .document-preview-active .document-image-body {
@@ -322,9 +402,9 @@
 
 .document-preview-active .document-finance-dashboard {
   display: grid;
-  gap: 4mm;
-  margin: 0 0 7mm;
-  padding: 5mm;
+  gap: 2.4mm;
+  margin: 0 0 4mm;
+  padding: 3.5mm;
   border-radius: 2mm;
 }
 
@@ -332,14 +412,14 @@
   display: flex;
   justify-content: space-between;
   gap: 4mm;
-  margin-bottom: 1.5mm;
+  margin-bottom: 1mm;
   color: var(--print-primary, #171512);
   font-size: 9pt;
 }
 
 .document-preview-active .document-finance-bar i {
   display: block;
-  height: 3mm;
+  height: 2.2mm;
   border-radius: 99px;
   background: linear-gradient(90deg, var(--print-primary, #171512), var(--print-accent, #b08a4a));
 }
@@ -354,15 +434,46 @@
   margin: 0;
 }
 
+.document-preview-active .document-finance-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2mm;
+  margin: 0 0 4mm;
+}
+
+.document-preview-active .document-finance-summary div {
+  border: 1px solid #ded3bf;
+  border-radius: 1.5mm;
+  background: rgba(255, 250, 241, 0.94);
+  padding: 2.2mm;
+}
+
+.document-preview-active .document-finance-summary span,
+.document-preview-active .document-finance-summary strong {
+  display: block;
+}
+
+.document-preview-active .document-finance-summary span {
+  color: #625846;
+  font-size: 7.4pt;
+  font-weight: 800;
+}
+
+.document-preview-active .document-finance-summary strong {
+  margin-top: 0.7mm;
+  color: var(--print-primary, #171512);
+  font-size: 9.2pt;
+}
+
 .document-preview-active .document-roadmap {
   display: grid;
-  gap: 4mm;
-  margin-bottom: 7mm;
+  gap: 3mm;
+  margin-bottom: 4mm;
 }
 
 .document-preview-active .document-roadmap-item {
   position: relative;
-  padding: 4mm 5mm 4mm 11mm;
+  padding: 3mm 4mm 3mm 10mm;
   border-radius: 2mm;
 }
 
@@ -391,4 +502,153 @@
   max-height: 22mm;
   object-fit: contain;
   margin-bottom: 16mm;
+}
+
+.document-preview-active .document-canvas-page {
+  background: #f7f3ea;
+}
+
+.document-preview-active .document-canvas-page-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5mm;
+}
+
+.document-preview-active .document-canvas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8mm;
+  padding-bottom: 4mm;
+  border-bottom: 1px solid #dacdaf;
+}
+
+.document-preview-active .document-canvas-header h2 {
+  margin: 0;
+  color: var(--print-primary, #171512);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20pt;
+  line-height: 1;
+}
+
+.document-preview-active .document-canvas-header img {
+  width: 24mm;
+  max-height: 18mm;
+  object-fit: contain;
+}
+
+.document-preview-active .document-canvas-board {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: 1fr 1fr 0.78fr;
+  grid-template-areas:
+    "parcerias atividades proposta relacionamento segmentos"
+    "parcerias recursos proposta canais segmentos"
+    "custos custos custos receitas receitas";
+  gap: 2.4mm;
+}
+
+.document-preview-active .document-canvas-cell {
+  min-width: 0;
+  min-height: 0;
+  padding: 2.4mm;
+  border: 1px solid #d8c9ad;
+  border-radius: 1.5mm;
+  background: rgba(255, 250, 241, 0.94);
+  overflow: hidden;
+}
+
+.document-preview-active .document-canvas-cell[data-section-id="parceriasChave"] { grid-area: parcerias; }
+.document-preview-active .document-canvas-cell[data-section-id="atividadesChave"] { grid-area: atividades; }
+.document-preview-active .document-canvas-cell[data-section-id="recursosChave"] { grid-area: recursos; }
+.document-preview-active .document-canvas-cell[data-section-id="propostaValor"] { grid-area: proposta; }
+.document-preview-active .document-canvas-cell[data-section-id="relacionamentoClientes"] { grid-area: relacionamento; }
+.document-preview-active .document-canvas-cell[data-section-id="canais"] { grid-area: canais; }
+.document-preview-active .document-canvas-cell[data-section-id="segmentosClientes"] { grid-area: segmentos; }
+.document-preview-active .document-canvas-cell[data-section-id="estruturaCustos"] { grid-area: custos; }
+.document-preview-active .document-canvas-cell[data-section-id="fontesReceita"] { grid-area: receitas; }
+
+.document-preview-active .document-canvas-cell h3 {
+  margin: 0 0 1.8mm;
+  color: var(--print-accent, #197278);
+  font-size: 7.5pt;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.document-preview-active .document-canvas-note {
+  margin: 0 0 1.4mm;
+  padding: 1.5mm;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 1mm;
+  background: #fff4a8;
+  color: #2d2614;
+  font-size: 6.1pt;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.document-preview-active .document-card-list {
+  display: grid;
+  gap: 3mm;
+  margin-bottom: 4mm;
+}
+
+.document-preview-active .document-card-list h3 {
+  margin: 0;
+  color: var(--print-primary, #171512);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14pt;
+}
+
+.document-preview-active .document-card-list-item {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2.5mm 4mm;
+  padding: 3.5mm 4mm;
+  border: 1px solid #ded3bf;
+  border-left: 3px solid var(--print-accent, #b08a4a);
+  border-radius: 2mm;
+  background: rgba(255, 250, 241, 0.94);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.document-preview-active .document-card-list-item div:first-child,
+.document-preview-active .document-card-list-item div:nth-child(2),
+.document-preview-active .document-card-list-item div:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.document-preview-active .document-card-list-item strong {
+  display: block;
+  margin-bottom: 0.7mm;
+  color: var(--print-primary, #171512);
+  font-size: 8pt;
+  text-transform: uppercase;
+}
+
+.document-preview-active .document-card-list-item p {
+  margin: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.document-preview-active .pdf-card,
+.document-preview-active .pdf-section,
+.document-preview-active .pdf-table,
+.document-preview-active .pdf-break-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.document-preview-active .document-canvas-empty {
+  margin: 0;
+  color: #9c927f;
+  font-size: 6pt;
+  font-style: italic;
 }

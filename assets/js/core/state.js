@@ -1,13 +1,29 @@
 function normalizeState(raw) {
+  limitNormalizationReport = [];
   pdfDebugLog("normalizeState", {
     rawSummary: summarizeState(raw || {}),
     rawKeys: Object.keys(raw || {})
   });
+  const normalizedFields = {};
+  Object.entries(raw?.fields || {}).forEach(([fieldName, value]) => {
+    normalizedFields[fieldName] = normalizeFieldValueByLimit(fieldName, value);
+  });
+
+  const normalizedTables = {};
+  Object.entries(raw?.tables || {}).forEach(([tableId, rows]) => {
+    const table = sections.flatMap((section) => section.tables || []).find((item) => item.id === tableId);
+    normalizedTables[tableId] = Array.isArray(rows)
+      ? rows.map((row) => Array.isArray(row)
+        ? row.map((value, columnIndex) => normalizeTableCellValueByLimit(table, columnIndex, value))
+        : [])
+      : rows;
+  });
+
   return {
     version: 2,
     updatedAt: raw?.updatedAt || null,
-    fields: raw?.fields || {},
-    tables: raw?.tables || {},
+    fields: normalizedFields,
+    tables: normalizedTables,
     images: {
       logo: raw?.images?.logo || null,
       anexos: Array.isArray(raw?.images?.anexos) ? raw.images.anexos : []

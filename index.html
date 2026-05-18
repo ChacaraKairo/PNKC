@@ -18,8 +18,9 @@
       <div class="header-inner">
         <a
           class="brand"
-          href="#home"
-          aria-label="Plano de Negócios — Koru Company - início"
+          href="https://www.seusiteempresarial.com.br"
+          data-company-website-link
+          aria-label="Abrir site empresarial da Koru Company"
         >
           <span class="brand-mark" aria-hidden="true">P</span>
           <span>
@@ -129,6 +130,9 @@
               <h2 id="currentStepTitle">Capa</h2>
             </div>
             <div class="toolbar-actions">
+              <button class="button ghost" type="button" id="copyStepPromptButton">
+                Copiar perguntas
+              </button>
               <button class="button ghost" type="button" id="prevButton">
                 Voltar
               </button>
@@ -147,6 +151,9 @@
           <form id="planForm" novalidate></form>
 
           <div class="bottom-actions">
+            <button class="button ghost" type="button" id="bottomCopyStepPromptButton">
+              Copiar perguntas
+            </button>
             <button class="button ghost" type="button" id="bottomPrevButton">
               Voltar
             </button>
@@ -161,12 +168,15 @@
       </section>
     </main>
 
+    <footer class="company-footer" data-company-footer></footer>
+
     <section
       class="print-report"
       id="printReport"
       aria-label="Relatório para impressão"
     ></section>
 
+    <script src="assets/js/data/contacts.js" defer></script>
     <script src="assets/js/config/constants.js" defer></script>
     <script src="assets/js/data/plan-schema.js" defer></script>
     <script src="assets/js/core/debug.js" defer></script>

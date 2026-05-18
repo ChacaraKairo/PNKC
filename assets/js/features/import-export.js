@@ -38,7 +38,10 @@ function importJSON(event) {
       dirty = false;
       renderForm();
       setCurrentStep(findFirstStartedStep());
-      showNotice("Plano importado com sucesso.", "success");
+      const limitMessage = limitNormalizationReport.length
+        ? " Alguns campos foram reduzidos para respeitar o limite de caracteres do relatÃ³rio."
+        : "";
+      showNotice(`Plano importado com sucesso.${limitMessage}`, "success");
       buttonFeedback(document.querySelector("label[for='importFile']"), "success", "Importado");
     } catch (error) {
       pdfDebugError("importJSON:error", error);

@@ -21,7 +21,9 @@ for (let index = 0; index < cli.length; index += 1) {
 
 const outPath = resolve(String(args.out || "dist/plano-pnkc.pdf"));
 const dataPath = args.data ? resolve(String(args.data)) : null;
+const canvasDataPath = args.canvas ? resolve(String(args.canvas)) : null;
 const debug = Boolean(args.debug);
+const mode = String(args.mode || "screenshot");
 const indexPath = resolve("index.html");
 const projectBaseUrl = `${pathToFileURL(resolve(".")).href}/`;
 const stylesheetPath = resolve("assets/css/styles.css");
@@ -35,6 +37,10 @@ const browserExecutablePath = [
 
 if (!existsSync(indexPath)) {
   throw new Error("index.html nao encontrado. Execute este comando na raiz do projeto.");
+}
+
+if (!["screenshot", "browser"].includes(mode)) {
+  throw new Error(`Modo de PDF invalido: ${mode}. Use "screenshot" ou "browser".`);
 }
 
 mkdirSync(dirname(outPath), { recursive: true });
@@ -101,6 +107,22 @@ try {
     if (debug) {
       const storedSizeAfterReload = await page.evaluate(() => localStorage.getItem("planopro_business_plan_v2")?.length || 0);
       console.log("[PNKC PDF DEBUG] localStorage after reload", { storedSizeAfterReload });
+    }
+  }
+
+  if (canvasDataPath) {
+    if (!existsSync(canvasDataPath)) throw new Error(`Arquivo JSON do Canvas nao encontrado: ${canvasDataPath}`);
+    const canvasJson = readFileSync(canvasDataPath, "utf8").replace(/^\uFEFF/, "");
+    JSON.parse(canvasJson);
+    await page.evaluate((payload) => {
+      localStorage.setItem("pnkc_canvas_v1", payload);
+    }, canvasJson);
+    await page.reload({ waitUntil: "networkidle0" });
+    if (debug) {
+      console.log("[PNKC PDF DEBUG] canvas json", {
+        canvasDataPath,
+        jsonLength: canvasJson.length
+      });
     }
   }
 
@@ -175,11 +197,15 @@ try {
 
     body.screenshot-pdf-mode .document-page {
       width: 210mm;
+      height: 297mm;
       min-height: 297mm;
+      max-height: 297mm;
       max-width: none;
       margin: 0;
       box-shadow: none;
       transform: none;
+      display: flex;
+      overflow: hidden;
     }
   </style>
 </body>
@@ -187,8 +213,8 @@ try {
 
   const printPage = await browser.newPage();
   await printPage.setViewport({
-    width: 794,
-    height: 1123,
+    width: 1600,
+    height: 2200,
     deviceScaleFactor: Number(args.scale || 2)
   });
   printPage.on("console", async (msg) => {
@@ -214,6 +240,21 @@ try {
   await printPage.setContent(isolatedDocumentHtml, { waitUntil: "networkidle0" });
   await printPage.evaluate(() => {
     document.body.classList.add("screenshot-pdf-mode");
+    const report = document.querySelector("#printReport");
+    if (report) {
+      report.style.display = "block";
+      report.style.visibility = "visible";
+      report.style.opacity = "1";
+    }
+    document.querySelectorAll("#printReport .document-page").forEach((page) => {
+      page.style.transform = "none";
+      page.style.display = "flex";
+      page.style.width = "210mm";
+      page.style.height = "297mm";
+      page.style.minHeight = "297mm";
+      page.style.maxHeight = "297mm";
+      page.style.overflow = "hidden";
+    });
   });
   await printPage.waitForSelector("#printReport .document-page", { timeout: 30000 });
 
@@ -249,7 +290,7 @@ try {
     const financialSection = Array.from(document.querySelectorAll("#printReport .document-section"))
       .find((section) => section.textContent.includes("Plano financeiro"));
     const visibleContentBlocks = document.querySelectorAll(
-      "#printReport .document-field, #printReport .document-finance-dashboard, #printReport .document-swot-matrix, #printReport .document-roadmap, #printReport .document-table, #printReport .document-summary li, #printReport .document-cover h1, #printReport .document-closing h2, #printReport .document-image-frame img"
+      "#printReport .document-field, #printReport .document-finance-dashboard, #printReport .document-swot-matrix, #printReport .document-roadmap, #printReport .document-table, #printReport .document-summary li, #printReport .document-cover h1, #printReport .document-closing h2, #printReport .document-image-frame img, #printReport .document-canvas-board"
     ).length;
 
     return {
@@ -297,14 +338,30 @@ try {
     console.log("[PNKC PDF DEBUG] debug artifacts", { debugHtmlPath, debugScreenshotPath });
   }
 
-  const pageScreenshots = await captureReportPageScreenshots(printPage);
-  if (!pageScreenshots.length) {
+  if (mode === "browser") {
+    await printPage.emulateMediaType("print");
+    await printPage.pdf({
+      path: outPath,
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: {
+        top: "0",
+        right: "0",
+        bottom: "0",
+        left: "0"
+      }
+    });
+    console.log(`PDF gerado pelo navegador em: ${outPath}`);
+  } else {
+  const screenshotPaths = await captureReportPageScreenshots(printPage, outPath);
+  if (!screenshotPaths.length) {
     throw new Error("Nenhuma pagina visual foi capturada para montar o PDF.");
   }
 
   const pdfDocument = await PDFDocument.create();
-  for (const screenshot of pageScreenshots) {
-    const image = await pdfDocument.embedPng(screenshot);
+  for (const screenshotPath of screenshotPaths) {
+    const image = await pdfDocument.embedPng(readFileSync(screenshotPath));
     const pdfPage = pdfDocument.addPage([A4_WIDTH_PT, A4_HEIGHT_PT]);
     pdfPage.drawImage(image, {
       x: 0,
@@ -318,18 +375,21 @@ try {
   writeFileSync(outPath, pdfBytes);
 
   console.log("[PNKC PDF DEBUG] screenshot PDF", {
-    pageCount: pageScreenshots.length,
+    pageCount: screenshotPaths.length,
     outputBytes: pdfBytes.length
   });
 
-  console.log(`PDF gerado em: ${outPath}`);
+  console.log(`PDF gerado por screenshots em: ${outPath}`);
+  }
 } finally {
   await browser.close();
 }
 
-async function captureReportPageScreenshots(page) {
+async function captureReportPageScreenshots(page, outputPath) {
   const pageCount = await page.evaluate(() => document.querySelectorAll("#printReport .document-page").length);
-  const screenshots = [];
+  const screenshotsDir = resolve(dirname(outputPath), "pdf-pages");
+  const screenshotPaths = [];
+  mkdirSync(screenshotsDir, { recursive: true });
 
   for (let index = 0; index < pageCount; index += 1) {
     const element = await page.$(`#printReport .document-page:nth-of-type(${index + 1})`);
@@ -337,14 +397,17 @@ async function captureReportPageScreenshots(page) {
       throw new Error(`Pagina visual ${index + 1} nao encontrada para screenshot.`);
     }
 
-    await element.evaluate((node) => node.scrollIntoView({ block: "start", inline: "nearest" }));
-    screenshots.push(await element.screenshot({
-      type: "png",
-      omitBackground: false
-    }));
+    const box = await element.boundingBox();
+    if (!box || box.width <= 0 || box.height <= 0) {
+      throw new Error(`Pagina ${index + 1} sem dimensoes validas para screenshot.`);
+    }
+
+    const screenshotPath = resolve(screenshotsDir, `page-${String(index + 1).padStart(3, "0")}.png`);
+    await element.screenshot({ path: screenshotPath });
+    screenshotPaths.push(screenshotPath);
   }
 
-  return screenshots;
+  return screenshotPaths;
 }
 
 function readCssBundle(filePath, seen = new Set()) {

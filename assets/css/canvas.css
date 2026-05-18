@@ -114,6 +114,12 @@
   font-size: 0.9rem;
 }
 
+.canvas-form-section .canvas-input-help {
+  margin: -4px 0 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .canvas-note-input {
   width: 100%;
   min-height: 96px;
@@ -126,6 +132,31 @@
 
 .canvas-note-input:focus {
   border-color: var(--primary);
+}
+
+.canvas-note-input.near-limit {
+  border-color: var(--warning);
+}
+
+.canvas-note-input.at-limit {
+  border-color: var(--danger);
+}
+
+.canvas-character-counter {
+  margin: -4px 0 10px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-align: right;
+}
+
+.canvas-character-counter.warning {
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.canvas-character-counter.danger {
+  color: var(--danger);
+  font-weight: 800;
 }
 
 .canvas-form-note-list {
@@ -173,6 +204,171 @@
 .canvas-board-toolbar p {
   margin: 4px 0 0;
   color: var(--muted);
+}
+
+.canvas-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.canvas-actions .button,
+.canvas-actions .file-button {
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+#canvasNotice {
+  margin-bottom: 14px;
+}
+
+.canvas-export-surface {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fffdf7;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.canvas-export-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.canvas-export-header img {
+  width: 72px;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.canvas-export-logo-mark {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 48px;
+  border: 1px solid #d8c9ad;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #171512;
+  color: #f7e8c8;
+  font-size: 0.96rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.canvas-export-header div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.canvas-export-header strong,
+.canvas-export-header span {
+  display: block;
+}
+
+.canvas-export-header strong {
+  color: var(--primary-strong);
+  font-size: 1.08rem;
+}
+
+.canvas-export-header span,
+.canvas-export-signature {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 760;
+}
+
+.canvas-export-watermark {
+  position: absolute;
+  right: 24px;
+  bottom: 18px;
+  z-index: 0;
+  color: rgba(18, 52, 59, 0.05);
+  font-size: 92px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.canvas-export-surface .canvas-board,
+.canvas-export-signature {
+  position: relative;
+  z-index: 1;
+}
+
+.canvas-export-signature {
+  margin: 14px 0 0;
+  text-align: right;
+}
+
+.canvas-export-full-surface {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 1600px;
+  min-height: 0;
+  border-radius: 0;
+  padding: 30px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.canvas-export-full-surface .canvas-export-header {
+  margin-bottom: 22px;
+}
+
+.canvas-export-full-surface .canvas-board-full {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: none;
+  grid-template-areas: none;
+  align-items: start;
+  gap: 14px;
+}
+
+.canvas-export-full-surface .canvas-cell {
+  grid-area: auto !important;
+  min-height: 0;
+  cursor: default;
+  overflow: visible;
+  break-inside: avoid;
+}
+
+.canvas-export-full-surface .canvas-cell:hover,
+.canvas-export-full-surface .canvas-cell:focus-visible {
+  transform: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.canvas-export-full-surface .canvas-cell-description {
+  margin-bottom: 10px;
+}
+
+.canvas-export-full-surface .canvas-cell-notes {
+  align-content: start;
+}
+
+.canvas-export-full-surface .canvas-note {
+  margin-top: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
+  transform: none;
+}
+
+.canvas-export-full-surface .canvas-note:nth-child(2n),
+.canvas-export-full-surface .canvas-note:nth-child(3n) {
+  transform: none;
 }
 
 .canvas-board {
@@ -419,6 +615,7 @@
   }
 
   .canvas-board-toolbar,
+  .canvas-actions,
   .canvas-form-header,
   .canvas-form-note-item {
     align-items: stretch;
