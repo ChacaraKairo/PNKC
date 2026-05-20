@@ -4,7 +4,7 @@ const MAX_LOGO_WIDTH = 900;
 const MAX_ATTACHMENT_WIDTH = 1400;
 const IMAGE_QUALITY = 0.78;
 const KORU_LOGO_SRC = "assets/img/koru-company.jpg";
-const COMPANY_SITE_URL = "https://korucompany.com.br";
+const COMPANY_SITE_URL = "https://site-koru-company.vercel.app";
 const PDF_DEBUG = false;
 const CRITICAL_FIELDS = [
   "nomeEmpresa",

@@ -6,27 +6,27 @@ const COMPANY_CONTACTS_CONFIG = {
     {
       label: "Koru company WebSite",
       type: "url",
-      value: "https://www.seusiteempresarial.com.br"
+      value: "https://site-koru-company.vercel.app"
     },
     {
       label: "Envie-nos um email",
       type: "email",
-      value: "contato@seudominio.com.br"
+      value: "korutecnologia@gmail.com"
     },
     {
       label: "Telefone",
       type: "phone",
-      value: "+5500000000000"
+      value: "+5519986011419"
     },
     {
       label: "WhatsApp",
       type: "whatsapp",
-      value: "+5500000000000"
+      value: "+5519986011419"
     },
     {
       label: "Instagram",
       type: "url",
-      value: "https://www.instagram.com/seuperfil"
+      value: "https://www.instagram.com/koru_company/"
     }
   ]
 };
