@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Criador de QR Codes da Koru Company com cores, estilos e imagem central personalizaveis."
+    />
+    <title>Criador de QR Code - Koru Company</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/qr-code.css" />
+  </head>
+  <body class="qr-page">
+    <a class="skip-link" href="#qrWorkspace">Ir para o criador de QR Code</a>
+
+    <header class="site-header" id="top">
+      <div class="header-inner">
+        <a
+          class="brand"
+          href="https://www.seusiteempresarial.com.br"
+          data-company-website-link
+          aria-label="Abrir site empresarial da Koru Company"
+        >
+          <span class="brand-mark" aria-hidden="true">P</span>
+          <span>
+            <strong>Koru Company</strong>
+            <small>Criador de QR Code</small>
+          </span>
+        </a>
+        <nav class="top-nav" aria-label="Navegacao principal">
+          <a href="index.html#home">Inicio</a>
+          <a href="index.html#workspace">Formulario</a>
+          <a href="index.html#financeiro">Financeiro</a>
+          <a href="canvas.html">Canvas</a>
+          <a href="qr-code.html" aria-current="page">QR Code</a>
+        </nav>
+        <div class="header-actions" aria-label="Acoes do QR Code">
+          <a class="button ghost" href="index.html">Plano completo</a>
+          <button class="button primary" type="button" id="downloadZipButton">
+            Baixar ZIP
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="qr-shell">
+      <section class="qr-intro" aria-labelledby="qrPageTitle">
+        <p class="eyebrow">Gerador visual</p>
+        <h1 id="qrPageTitle">Crie QR Codes personalizados para sua marca.</h1>
+        <p>
+          Defina ate 4 links, escolha pontos ou quadrados, ajuste cores,
+          adicione uma imagem no centro e baixe tudo em ZIP.
+        </p>
+      </section>
+
+      <section
+        class="qr-workspace"
+        id="qrWorkspace"
+        aria-label="Criador de QR Code"
+      >
+        <form class="qr-controls" id="qrForm">
+          <div class="qr-panel-head">
+            <div>
+              <p class="eyebrow">Conteudo</p>
+              <h2>Dados do QR Code</h2>
+            </div>
+            <button class="button ghost" type="button" id="resetQrButton">
+              Restaurar
+            </button>
+          </div>
+
+          <div class="field full">
+            <label for="qrCount">Quantidade de QR Codes</label>
+            <select id="qrCount">
+              <option value="1">1 QR Code</option>
+              <option value="2">2 QR Codes</option>
+              <option value="3">3 QR Codes</option>
+              <option value="4">4 QR Codes</option>
+            </select>
+            <p class="help-text">
+              Cada campo preenchido gera um QR Code separado no arquivo ZIP.
+            </p>
+          </div>
+
+          <div class="qr-link-list" id="qrLinkList">
+            <div class="field full qr-link-field" data-qr-field="1">
+              <label for="qrData1">Link ou texto 1</label>
+              <textarea id="qrData1" rows="3" maxlength="900">
+Koru Company</textarea
+              >
+            </div>
+            <div class="field full qr-link-field" data-qr-field="2" hidden>
+              <label for="qrData2">Link ou texto 2</label>
+              <textarea id="qrData2" rows="3" maxlength="900"></textarea>
+            </div>
+            <div class="field full qr-link-field" data-qr-field="3" hidden>
+              <label for="qrData3">Link ou texto 3</label>
+              <textarea id="qrData3" rows="3" maxlength="900"></textarea>
+            </div>
+            <div class="field full qr-link-field" data-qr-field="4" hidden>
+              <label for="qrData4">Link ou texto 4</label>
+              <textarea id="qrData4" rows="3" maxlength="900"></textarea>
+            </div>
+            <p class="help-text">
+              Use URLs, telefones, emails, Pix copia e cola ou textos curtos.
+            </p>
+          </div>
+
+          <div class="field-grid qr-two">
+            <div class="field">
+              <label for="dotsType">Formato do QR Code</label>
+              <select id="dotsType">
+                <option value="dots">Pontos</option>
+                <option value="square">Todo quadrado</option>
+                <option value="rounded">Arredondado</option>
+                <option value="classy-rounded">Estilizado</option>
+                <option value="extra-rounded">Extra arredondado</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="cornersType">Formato dos cantos</label>
+              <select id="cornersType">
+                <option value="square">Quadrado</option>
+                <option value="dot">Ponto</option>
+                <option value="extra-rounded">Arredondado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-grid qr-three">
+            <div class="field qr-color-field">
+              <label for="qrColor">Cor do QR Code</label>
+              <input id="qrColor" type="color" value="#12343b" />
+            </div>
+            <div class="field qr-color-field">
+              <label for="cornerColor">Cor dos cantos</label>
+              <input id="cornerColor" type="color" value="#197278" />
+            </div>
+            <div class="field qr-color-field">
+              <label for="backgroundColor">Cor do fundo</label>
+              <input id="backgroundColor" type="color" value="#ffffff" />
+            </div>
+          </div>
+
+          <div class="field-grid qr-three">
+            <div class="field">
+              <label for="qrSize">Tamanho</label>
+              <input
+                id="qrSize"
+                type="range"
+                min="220"
+                max="720"
+                step="20"
+                value="360"
+              />
+              <output for="qrSize" id="qrSizeValue">360 px</output>
+            </div>
+            <div class="field">
+              <label for="qrMargin">Margem</label>
+              <input
+                id="qrMargin"
+                type="range"
+                min="0"
+                max="40"
+                step="2"
+                value="10"
+              />
+              <output for="qrMargin" id="qrMarginValue">10 px</output>
+            </div>
+            <div class="field">
+              <label for="imageSize">Imagem central</label>
+              <input
+                id="imageSize"
+                type="range"
+                min="14"
+                max="38"
+                step="2"
+                value="26"
+              />
+              <output for="imageSize" id="imageSizeValue">26%</output>
+            </div>
+          </div>
+
+          <div class="upload-block qr-upload">
+            <label for="qrImage">Imagem no centro do QR Code</label>
+            <div class="qr-upload-row">
+              <label class="button ghost file-button" for="qrImage"
+                >Escolher imagem</label
+              >
+              <button class="button ghost" type="button" id="clearImageButton">
+                Remover imagem
+              </button>
+            </div>
+            <input
+              class="visually-hidden"
+              id="qrImage"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            />
+            <p class="help-text">
+              Prefira logos simples e mantenha a cor do fundo clara para
+              facilitar a leitura.
+            </p>
+          </div>
+        </form>
+
+        <section class="qr-preview-panel" aria-labelledby="qrPreviewTitle">
+          <div class="qr-preview-head">
+            <div>
+              <p class="eyebrow">Previa</p>
+              <h2 id="qrPreviewTitle">QR Codes gerados</h2>
+            </div>
+            <p id="qrStatus" role="status" aria-live="polite">
+              Pronto para editar.
+            </p>
+          </div>
+
+          <div class="qr-preview-surface">
+            <div id="qrCodePreview" class="qr-code-preview-grid"></div>
+          </div>
+
+          <div class="qr-preview-actions">
+            <button
+              class="button primary"
+              type="button"
+              id="downloadZipButtonSecondary"
+            >
+              Baixar ZIP
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="company-footer" data-company-footer></footer>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0/lib/qr-code-styling.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+      defer
+    ></script>
+    <script src="assets/js/data/contacts.js" defer></script>
+    <script src="assets/js/qr-code.js" defer></script>
+  </body>
+</html>

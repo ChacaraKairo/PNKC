@@ -1,0 +1,248 @@
+.qr-page {
+  min-height: 100vh;
+}
+
+.qr-page .top-nav a[aria-current="page"] {
+  color: var(--primary);
+}
+
+.qr-shell {
+  width: min(1220px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 38px 0 64px;
+}
+
+.qr-intro {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.qr-intro h1,
+.qr-intro p,
+.qr-panel-head h2,
+.qr-preview-head h2,
+.qr-preview-head p,
+.qr-code-card p {
+  margin: 0;
+}
+
+.qr-intro h1 {
+  max-width: 840px;
+  color: var(--primary-strong);
+  font-size: clamp(2rem, 4vw, 4.2rem);
+  line-height: 1;
+}
+
+.qr-intro p:not(.eyebrow) {
+  max-width: 720px;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.qr-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.qr-controls,
+.qr-preview-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.qr-controls {
+  position: sticky;
+  top: 92px;
+  display: grid;
+  gap: 16px;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.qr-panel-head,
+.qr-preview-head,
+.qr-preview-actions,
+.qr-upload-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.qr-panel-head {
+  position: sticky;
+  top: -18px;
+  z-index: 2;
+  margin: -18px -18px 0;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.qr-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.qr-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.qr-color-field input[type="color"] {
+  min-height: 48px;
+  padding: 4px;
+}
+
+.qr-link-list {
+  display: grid;
+  gap: 12px;
+}
+
+.qr-controls output {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 760;
+}
+
+.qr-upload {
+  margin-top: 0;
+}
+
+.qr-upload-row {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.qr-preview-panel {
+  min-width: 0;
+  padding: 18px;
+}
+
+.qr-preview-head {
+  margin-bottom: 16px;
+}
+
+#qrStatus {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 760;
+  text-align: right;
+}
+
+.qr-preview-surface {
+  min-height: 560px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  padding: 26px;
+  background:
+    linear-gradient(45deg, #eef4f1 25%, transparent 25%),
+    linear-gradient(-45deg, #eef4f1 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eef4f1 75%),
+    linear-gradient(-45deg, transparent 75%, #eef4f1 75%);
+  background-color: #fff;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-size: 20px 20px;
+  overflow: auto;
+}
+
+.qr-code-preview-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.qr-code-preview-grid:has(.qr-code-card:only-child) {
+  grid-template-columns: minmax(220px, min(100%, 520px));
+  justify-content: center;
+}
+
+.qr-code-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  min-width: 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.qr-code-card p {
+  width: 100%;
+  color: var(--primary-strong);
+  font-weight: 850;
+  text-align: left;
+}
+
+.qr-code-canvas {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.qr-code-canvas canvas,
+.qr-code-canvas svg {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  box-shadow: 0 18px 38px rgba(18, 52, 59, 0.14);
+}
+
+.qr-preview-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+@media (max-width: 1060px) {
+  .qr-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-controls {
+    position: relative;
+    top: 0;
+    max-height: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .qr-two,
+  .qr-three {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-panel-head,
+  .qr-preview-head,
+  .qr-preview-actions,
+  .qr-upload-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #qrStatus {
+    text-align: left;
+  }
+
+  .qr-preview-surface {
+    min-height: 360px;
+    padding: 14px;
+  }
+
+  .qr-code-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
