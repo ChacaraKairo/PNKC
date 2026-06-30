@@ -183,6 +183,8 @@
 
 .field {
   min-width: 0;
+  display: grid;
+  gap: 6px;
 }
 
 .field.full {
@@ -196,7 +198,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 7px;
+  margin-bottom: 0;
   color: #2d3b38;
   font-size: 0.92rem;
   font-weight: 820;
@@ -211,7 +213,8 @@
   background: #fff;
   color: var(--ink);
   padding: 11px 12px;
-  min-height: 44px;
+  min-height: 46px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
 .field textarea {
@@ -232,15 +235,38 @@
   background: #fbfffd;
 }
 
+.field.is-valid input,
+.field.is-valid textarea,
+.field.is-valid select {
+  border-color: var(--ok);
+  box-shadow: 0 0 0 3px rgba(2, 122, 72, 0.12);
+}
+
 .field.required input:not(.filled),
 .field.required textarea:not(.filled),
 .field.required select:not(.filled) {
   border-color: #e4b66a;
 }
 
+.field.has-error input,
+.field.has-error textarea,
+.field.has-error select {
+  border-color: var(--danger);
+  background: #fffafa;
+  box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+}
+
 .help-text {
-  margin-top: 6px;
+  margin: 0;
   font-size: 0.84rem;
+}
+
+.field-error {
+  min-height: 1.15em;
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 760;
 }
 
 .field-status {

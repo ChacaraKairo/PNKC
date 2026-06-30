@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Plano de Negócios — Koru Company: aplicação web para criar, salvar, exportar e imprimir planos de negócios completos."
+      content="Monte gratuitamente seu plano de negócios com a ferramenta da Koru Company. Organize sua ideia, calcule indicadores financeiros, gere PDF profissional e fale conosco para transformar seu projeto em site, sistema ou app."
     />
-    <title>Plano de Negócios — Koru Company</title>
+    <meta property="og:title" content="Koru PlanoPro — Monte seu plano de negócios" />
+    <meta property="og:description" content="Ferramenta gratuita da Koru Company para criar plano de negócios, gerar PDF e planejar seu próximo projeto digital." />
+    <meta property="og:image" content="assets/img/hero.jpg" />
+    <meta property="og:type" content="website" />
+    <title>Koru PlanoPro — Plano de Negócios</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="assets/css/styles.css" />
   </head>
@@ -18,14 +22,16 @@
       <div class="header-inner">
         <a
           class="brand"
-          href="https://www.seusiteempresarial.com.br"
+          href="https://site-koru-company.vercel.app"
           data-company-website-link
           aria-label="Abrir site empresarial da Koru Company"
         >
-          <span class="brand-mark" aria-hidden="true">P</span>
+          <span class="brand-mark" aria-hidden="true">
+            <img src="assets/img/logosemescrita.png" alt="" />
+          </span>
           <span>
             <strong>Koru Company</strong>
-            <small>Plano de negócios</small>
+            <small>Koru PlanoPro</small>
           </span>
         </a>
         <nav class="top-nav" aria-label="Navegação principal">
@@ -63,18 +69,25 @@
         <div class="hero-media" aria-hidden="true"></div>
         <div class="hero-content">
           <p class="eyebrow">
-            Baseado em roteiros do Sebrae e modelos acadêmicos
+            Koru PlanoPro
           </p>
           <h1 id="heroTitle">
-            Monte um plano de negócios completo, claro e pronto para apresentar.
+            Monte seu plano e descubra o próximo passo para transformar sua ideia em tecnologia.
           </h1>
           <p>
-            Preencha por etapas, salve automaticamente no navegador, anexe
-            imagens, exporte JSON e gere um relatório profissional para
-            impressão ou PDF.
+            Use gratuitamente a ferramenta da Koru Company para organizar sua
+            ideia, calcular viabilidade e gerar um PDF profissional. Se quiser
+            tirar o projeto do papel, fale conosco.
           </p>
           <div class="hero-actions">
-            <a class="button primary" href="#workspace">Começar agora</a>
+            <a class="button primary" href="#workspace">Começar meu plano</a>
+            <a
+              class="button light"
+              href="https://wa.me/5519986011419"
+              data-company-whatsapp-link
+            >
+              Falar com a Koru Company
+            </a>
             <button class="button light" type="button" id="continueButton">
               Continuar rascunho
             </button>
@@ -95,6 +108,48 @@
           <span class="metric-value" id="homeSaved">Ainda não salvo</span>
           <span class="metric-label">última gravação local</span>
         </div>
+      </section>
+
+      <section class="koru-help" aria-labelledby="koruHelpTitle">
+        <div class="koru-help-head">
+          <p class="eyebrow">Do plano ao produto digital</p>
+          <h2 id="koruHelpTitle">Como a Koru Company pode ajudar</h2>
+          <p>
+            A ferramenta organiza a ideia. A Koru ajuda a transformar esse
+            planejamento em site, sistema, aplicativo ou automação real.
+          </p>
+        </div>
+        <div class="koru-help-grid">
+          <article>
+            <strong>Planejamento antes do desenvolvimento</strong>
+            <p>
+              Estruture sua ideia, valide premissas e entenda o que precisa
+              existir antes de investir em tecnologia.
+            </p>
+          </article>
+          <article>
+            <strong>Do plano ao sistema real</strong>
+            <p>
+              Criamos sites, sistemas web, apps, automações e dashboards sob
+              medida para empresas em fase inicial ou crescimento.
+            </p>
+          </article>
+          <article>
+            <strong>Atendimento direto e consultivo</strong>
+            <p>
+              Você conversa com quem entende do projeto, com clareza sobre
+              escopo, prioridades, orçamento e próximos passos.
+            </p>
+          </article>
+        </div>
+        <a
+          class="button primary"
+          href="https://wa.me/5519986011419"
+          data-company-whatsapp-link
+          data-company-whatsapp-message="Olá, vim pelo Koru PlanoPro e quero transformar meu plano em um projeto digital."
+        >
+          Falar no WhatsApp
+        </a>
       </section>
 
       <section
@@ -149,6 +204,33 @@
             role="status"
             aria-live="polite"
           ></div>
+          <section class="conversion-cta" id="postPrintCta" hidden>
+            <div>
+              <p class="eyebrow">Próximo passo</p>
+              <h3>Seu plano está pronto. Vamos transformar isso em projeto?</h3>
+              <p>
+                A Koru Company desenvolve sites, sistemas, aplicativos e
+                automações para tirar ideias do papel com clareza e cuidado.
+              </p>
+            </div>
+            <div class="conversion-actions">
+              <a
+                class="button primary"
+                href="https://wa.me/5519986011419"
+                data-company-whatsapp-link
+                data-company-whatsapp-message="Olá, gerei meu plano no Koru PlanoPro e quero ajuda para transformar esse planejamento em um projeto digital."
+              >
+                Falar no WhatsApp
+              </a>
+              <a
+                class="button ghost"
+                href="https://site-koru-company.vercel.app"
+                data-company-website-link
+              >
+                Ver site da Koru
+              </a>
+            </div>
+          </section>
           <form id="planForm" novalidate></form>
 
           <div class="bottom-actions">

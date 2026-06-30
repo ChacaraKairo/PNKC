@@ -26,9 +26,17 @@
   .finance-results {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .koru-help-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
+  main {
+    padding-bottom: 88px;
+  }
+
   .status-band,
   .field-grid,
   .field-grid.three,
@@ -44,13 +52,19 @@
   }
 
   .hero-content {
-    padding-bottom: 92px;
+    padding-bottom: 150px;
+  }
+
+  .hero h1 {
+    font-size: 2.25rem;
+    line-height: 1.02;
   }
 
   .form-toolbar,
   .section-head,
   .finance-intro,
-  .company-footer-inner {
+  .company-footer-inner,
+  .conversion-cta {
     align-items: stretch;
     flex-direction: column;
   }
@@ -58,7 +72,8 @@
   .toolbar-actions,
   .header-actions,
   .hero-actions,
-  .bottom-actions {
+  .bottom-actions,
+  .conversion-actions {
     align-items: stretch;
     flex-direction: column;
   }
@@ -77,5 +92,37 @@
 
   .form-step {
     padding: 18px;
+  }
+
+  .floating-whatsapp {
+    display: none;
+  }
+
+  .mobile-cta-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 90;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(13, 15, 17, 0.94);
+    backdrop-filter: blur(10px);
+  }
+
+  .mobile-cta-bar p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .mobile-cta-whatsapp {
+    width: auto;
+    white-space: nowrap;
   }
 }

@@ -421,11 +421,12 @@ function renderDocumentImagePages() {
 function renderDocumentClosing(company, generatedAt) {
   return renderDocumentPage(`
       <img src="${KORU_LOGO_SRC}" alt="KORU Company">
-      <p>Obrigado</p>
+      <p>Precisa de ajuda para executar este plano?</p>
       <h2>${escapeHtml(company || "Koru Company")}</h2>
-      <strong>Entender antes de desenvolver.</strong>
+      <strong>A Koru Company desenvolve sites, sistemas, aplicativos e automações para transformar planejamento em produto digital.</strong>
       <div>
-        <span>Plano de Negócios — Koru Company</span>
+        <span>WhatsApp: +55 19 98601-1419</span>
+        <span>Site: ${COMPANY_SITE_URL}</span>
         <span>Documento gerado em ${generatedAt}</span>
       </div>
   `, { pageClass: "document-closing", hideChrome: true });

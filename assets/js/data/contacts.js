@@ -1,32 +1,43 @@
+const COMPANY_PROFILE = {
+  name: "Koru Company",
+  website: "https://site-koru-company.vercel.app",
+  email: "korutecnologia@gmail.com",
+  phone: "+5519986011419",
+  whatsapp: "+5519986011419",
+  instagram: "https://www.instagram.com/koru_company/",
+  slogan: "Criamos soluções digitais com clareza, cuidado e propósito.",
+  whatsappMessage: "Olá, vim pelo Koru PlanoPro e quero ajuda com meu projeto."
+};
+
 const COMPANY_CONTACTS_CONFIG = {
-  companyName: "Koru Company",
-  companyWebsiteUrl: "https://www.seusiteempresarial.com.br",
-  footerDescription: "servimos como gostariamos de sermos servidos",
+  companyName: COMPANY_PROFILE.name,
+  companyWebsiteUrl: COMPANY_PROFILE.website,
+  footerDescription: COMPANY_PROFILE.slogan,
   contacts: [
     {
-      label: "Koru company WebSite",
+      label: "Site da Koru Company",
       type: "url",
-      value: "https://site-koru-company.vercel.app"
+      value: COMPANY_PROFILE.website
     },
     {
       label: "Envie-nos um email",
       type: "email",
-      value: "korutecnologia@gmail.com"
+      value: COMPANY_PROFILE.email
     },
     {
       label: "Telefone",
       type: "phone",
-      value: "+5519986011419"
+      value: COMPANY_PROFILE.phone
     },
     {
       label: "WhatsApp",
       type: "whatsapp",
-      value: "+5519986011419"
+      value: COMPANY_PROFILE.whatsapp
     },
     {
       label: "Instagram",
       type: "url",
-      value: "https://www.instagram.com/koru_company/"
+      value: COMPANY_PROFILE.instagram
     }
   ]
 };
@@ -34,7 +45,15 @@ const COMPANY_CONTACTS_CONFIG = {
 function openCompanyWebsite() {
   redirectToContact({
     type: "url",
-    value: COMPANY_CONTACTS_CONFIG.companyWebsiteUrl
+    value: COMPANY_PROFILE.website
+  });
+}
+
+function openCompanyWhatsApp(message = COMPANY_PROFILE.whatsappMessage) {
+  redirectToContact({
+    type: "whatsapp",
+    value: COMPANY_PROFILE.whatsapp,
+    message
   });
 }
 
@@ -53,11 +72,15 @@ function redirectToContact(contact) {
 function buildContactHref(contact) {
   const type = String(contact?.type || "").toLowerCase();
   const value = String(contact?.value || "").trim();
+  const message = String(contact?.message || "").trim();
 
   if (!value) return "";
   if (type === "email") return `mailto:${value}`;
   if (type === "phone") return `tel:${value.replace(/[^\d+]/g, "")}`;
-  if (type === "whatsapp") return `https://wa.me/${value.replace(/\D/g, "")}`;
+  if (type === "whatsapp") {
+    const text = message ? `?text=${encodeURIComponent(message)}` : "";
+    return `https://wa.me/${value.replace(/\D/g, "")}${text}`;
+  }
   return ensureAbsoluteUrl(value);
 }
 
@@ -97,12 +120,62 @@ function renderCompanyFooter() {
 
 function bindCompanyWebsiteLinks() {
   document.querySelectorAll("[data-company-website-link]").forEach((link) => {
-    link.setAttribute("href", COMPANY_CONTACTS_CONFIG.companyWebsiteUrl || "#");
+    link.setAttribute("href", COMPANY_PROFILE.website || "#");
     link.addEventListener("click", (event) => {
       event.preventDefault();
       openCompanyWebsite();
     });
   });
+}
+
+function bindCompanyWhatsAppLinks() {
+  document.querySelectorAll("[data-company-whatsapp-link], [data-whatsapp]").forEach((link) => {
+    const message = link.dataset.companyWhatsappMessage || link.dataset.whatsapp || COMPANY_PROFILE.whatsappMessage;
+    link.setAttribute("href", buildContactHref({
+      type: "whatsapp",
+      value: COMPANY_PROFILE.whatsapp,
+      message
+    }));
+    link.setAttribute("target", "_blank");
+    link.setAttribute("rel", "noopener noreferrer");
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      openCompanyWhatsApp(message);
+    });
+  });
+}
+
+function renderQuickContactActions() {
+  if (document.querySelector("[data-floating-whatsapp]")) return;
+
+  const link = document.createElement("a");
+  link.className = "floating-whatsapp";
+  link.dataset.floatingWhatsapp = "true";
+  link.dataset.companyWhatsappLink = "true";
+  link.href = buildContactHref({
+    type: "whatsapp",
+    value: COMPANY_PROFILE.whatsapp,
+    message: COMPANY_PROFILE.whatsappMessage
+  });
+  link.textContent = "Falar com a Koru Company";
+  link.setAttribute("aria-label", "Falar com a Koru Company no WhatsApp");
+  document.body.appendChild(link);
+
+  const bar = document.createElement("div");
+  bar.className = "mobile-cta-bar";
+  bar.setAttribute("aria-label", "Ação rápida de atendimento");
+  bar.innerHTML = `
+    <p>Quer atendimento rápido? Fale com a Koru agora.</p>
+    <a
+      class="mobile-cta-whatsapp"
+      href="${escapeContactHtml(link.href)}"
+      data-company-whatsapp-link
+      data-company-whatsapp-message="${escapeContactHtml(COMPANY_PROFILE.whatsappMessage)}"
+    >
+      Chamar no WhatsApp
+    </a>
+  `;
+  document.body.appendChild(bar);
 }
 
 function escapeContactHtml(value) {
@@ -115,6 +188,8 @@ function escapeContactHtml(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  bindCompanyWebsiteLinks();
   renderCompanyFooter();
+  renderQuickContactActions();
+  bindCompanyWebsiteLinks();
+  bindCompanyWhatsAppLinks();
 });

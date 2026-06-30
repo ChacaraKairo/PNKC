@@ -77,23 +77,25 @@ function renderField(field) {
 
   const id = `field-${field.name}`;
   const helpId = `${id}-help`;
+  const errorId = `${id}-error`;
   const help = getFieldHelp(field);
   const tag = field.kind === "textarea" ? "textarea" : field.kind === "select" ? "select" : "input";
   const required = field.required ? "required" : "";
   const maxLength = getFieldMaxLength(field);
   const maxLengthAttr = maxLength ? `maxlength="${maxLength}"` : "";
   const fieldClass = `field ${field.full ? "full" : ""} ${field.required ? "required" : ""}`;
-  const common = `id="${id}" data-field="${field.name}" aria-describedby="${helpId}" ${required} ${maxLengthAttr}`;
-  const status = field.required ? `<span class="field-status">Obrigatório</span>` : `<span class="field-status">Opcional</span>`;
+  const common = `id="${id}" name="${field.name}" data-field="${field.name}" aria-describedby="${helpId} ${errorId}" aria-invalid="false" ${required} ${maxLengthAttr}`;
+  const status = field.required ? "" : `<span class="field-status">opcional</span>`;
+  const inputAttrs = getFieldInputAttributes(field);
   let control = "";
 
   if (tag === "textarea") {
-    control = `<textarea ${common} placeholder="${field.placeholder || ""}">${escapeHtml(getField(field.name))}</textarea>`;
+    control = `<textarea ${common} ${inputAttrs} placeholder="${field.placeholder || ""}">${escapeHtml(getField(field.name))}</textarea>`;
   } else if (tag === "select") {
     control = `<select ${common}>${field.options.map((option) => `<option ${getField(field.name) === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
   } else {
     const value = getField(field.name) || field.defaultValue || "";
-    control = `<input ${common} type="${field.inputType || "text"}" step="${field.step || ""}" value="${escapeHtml(value)}" placeholder="${field.placeholder || ""}" ${field.calc ? "data-calc" : ""}>`;
+    control = `<input ${common} type="${field.inputType || inferFieldInputType(field)}" step="${field.step || ""}" value="${escapeHtml(value)}" placeholder="${field.placeholder || ""}" ${inputAttrs} ${field.calc ? "data-calc" : ""}>`;
   }
 
   return `
@@ -101,12 +103,50 @@ function renderField(field) {
       <label for="${id}"><span>${field.label}</span>${status}</label>
       ${control}
       <p class="help-text" id="${helpId}">${help}</p>
+      <p class="field-error" id="${errorId}" data-field-error="${field.name}" aria-live="polite"></p>
       ${maxLength ? `
         <div class="character-counter" data-character-counter="${field.name}">
           ${String(getField(field.name) || "").length} / ${maxLength} caracteres
         </div>
       ` : ""}
     </div>`;
+}
+
+function inferFieldInputType(field) {
+  const name = String(field?.name || "").toLowerCase();
+  if (/email/.test(name)) return "email";
+  if (/telefone|phone|whatsapp|celular/.test(name)) return "tel";
+  if (/site|url|website|instagram|linkedin/.test(name)) return "url";
+  return "text";
+}
+
+function getFieldInputAttributes(field) {
+  const name = String(field?.name || "");
+  const lowerName = name.toLowerCase();
+  const attrs = [];
+  const autocomplete = getFieldAutocomplete(field);
+  const inputType = field.inputType || inferFieldInputType(field);
+
+  if (autocomplete) attrs.push(`autocomplete="${autocomplete}"`);
+  if (inputType === "email" || inputType === "url") attrs.push('autocapitalize="none"');
+  if (inputType === "tel") attrs.push('inputmode="tel"', 'autocomplete="tel"');
+  if (inputType === "number") attrs.push('inputmode="decimal"');
+  if (/cnpj/.test(lowerName)) attrs.push('inputmode="numeric"', 'autocomplete="off"', 'autocapitalize="none"');
+  if (/ano/.test(lowerName)) attrs.push('inputmode="numeric"');
+
+  return Array.from(new Set(attrs)).join(" ");
+}
+
+function getFieldAutocomplete(field) {
+  const name = String(field?.name || "").toLowerCase();
+  if (/nomeempresa|nomefantasia|razaosocial/.test(name)) return "organization";
+  if (/autor|responsavel|responsável/.test(name)) return "name";
+  if (/email/.test(name)) return "email";
+  if (/telefone|phone|whatsapp|celular/.test(name)) return "tel";
+  if (/endereco/.test(name)) return "street-address";
+  if (/cidade/.test(name)) return "address-level2";
+  if (/site|url|website/.test(name)) return "url";
+  return "";
 }
 
 function renderFinanceCards() {

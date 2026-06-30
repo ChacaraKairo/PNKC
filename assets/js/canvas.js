@@ -544,7 +544,7 @@ function createFullCanvasExportSurface() {
   surface.setAttribute("aria-hidden", "true");
   surface.innerHTML = `
     <div class="canvas-export-header">
-      <div class="canvas-export-logo-mark" aria-label="Koru Company">KORU</div>
+      <img src="assets/img/logo4x3completa.png" alt="PNKC" />
       <div>
         <strong>Business Model Canvas</strong>
         <span>${escapeCanvasHtml(companyName)}</span>

@@ -76,7 +76,8 @@ async function printReport(button) {
     await buildPrintReport();
     document.body.classList.add("document-preview-active");
     document.getElementById("printReport").scrollIntoView({ behavior: "smooth", block: "start" });
-    showNotice("Versão HTML de impressão preparada. A janela de impressão será aberta.", "success");
+    document.getElementById("postPrintCta")?.removeAttribute("hidden");
+    showNotice("Seu plano está pronto. Quer transformar esse planejamento em um site, sistema ou aplicativo? Fale com a Koru Company.", "success");
     buttonFeedback(button, "success", "Preparado");
     window.setTimeout(() => window.print(), 350);
   } catch {

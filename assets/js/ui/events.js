@@ -23,6 +23,7 @@ function bindEvents() {
   form.addEventListener("input", (event) => {
     if (event.target.matches("[data-field]")) {
       updateCharacterCounter(event.target.dataset.field);
+      if (event.target.dataset.touched === "true") validateFieldControl(event.target);
       dirty = true;
       saveState();
       markFilledFields();
@@ -41,7 +42,9 @@ function bindEvents() {
 
   form.addEventListener("change", (event) => {
     if (event.target.matches("[data-field]")) {
+      event.target.dataset.touched = "true";
       updateCharacterCounter(event.target.dataset.field);
+      validateFieldControl(event.target);
       dirty = true;
       saveState();
       markFilledFields();
@@ -60,6 +63,12 @@ function bindEvents() {
     if (event.target.id === "logoInput") handleLogoUpload(event.target.files[0]);
     if (event.target.id === "attachmentInput") handleAttachments(event.target.files, event.target);
   });
+
+  form.addEventListener("blur", (event) => {
+    if (!event.target.matches?.("[data-field]")) return;
+    event.target.dataset.touched = "true";
+    validateFieldControl(event.target);
+  }, true);
 
   form.addEventListener("click", (event) => {
     const add = event.target.closest("[data-add-row]");
@@ -282,9 +291,53 @@ function prevStep() {
 }
 
 function requiredMissingInCurrentStep() {
-  return (sections[currentStep].fields || [])
-    .filter((field) => field.required && !isFilled(getField(field.name)))
-    .map((field) => field.label);
+  const missing = [];
+  (sections[currentStep].fields || []).forEach((field) => {
+    if (field.type) return;
+    const input = document.querySelector(`[data-field="${field.name}"]`);
+    const valid = input ? validateFieldControl(input, { force: true }) : true;
+    if (!valid && field.required) missing.push(field.label);
+  });
+
+  if (missing.length) {
+    const firstInvalid = document.querySelector(".field.has-error [data-field]");
+    firstInvalid?.focus({ preventScroll: true });
+    firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  return missing;
+}
+
+function validateFieldControl(input, options = {}) {
+  const fieldName = input?.dataset?.field;
+  const field = findFieldConfig(fieldName);
+  if (!field || field.type) return true;
+
+  const value = String(input.value || "").trim();
+  const error = getFieldValidationError(field, input, value);
+  const wrapper = input.closest(".field");
+  const errorElement = document.querySelector(`[data-field-error="${fieldName}"]`);
+  const shouldShowSuccess = options.force || input.dataset.touched === "true" || value.length > 0;
+
+  input.setAttribute("aria-invalid", error ? "true" : "false");
+  wrapper?.classList.toggle("has-error", Boolean(error));
+  wrapper?.classList.toggle("is-valid", !error && shouldShowSuccess && value.length > 0);
+  if (errorElement) errorElement.textContent = error;
+  return !error;
+}
+
+function getFieldValidationError(field, input, value) {
+  if (field.required && !value) return `Preencha ${field.label}.`;
+  if (!value) return "";
+
+  const type = input.getAttribute("type");
+  if (type === "email" && input.validity?.typeMismatch) return "Insira um e-mail válido com @.";
+  if (type === "url" && input.validity?.typeMismatch) return "Insira uma URL válida, começando com https://.";
+  if (type === "number" && input.validity?.badInput) return "Insira apenas números neste campo.";
+  if (input.validity?.rangeUnderflow) return `Insira um valor maior ou igual a ${input.min}.`;
+  if (input.validity?.rangeOverflow) return `Insira um valor menor ou igual a ${input.max}.`;
+  if (input.validity?.tooLong) return `Use no máximo ${input.maxLength} caracteres.`;
+  return "";
 }
 
 function addTableRow(tableId) {
